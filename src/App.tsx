@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useRef, useEffect } from 'react';
+import React, { useState, useMemo, useRef, useEffect, useCallback } from 'react';
 import {
   Activity,
   Award,
@@ -119,6 +119,7 @@ import {
   VisualRadialGauge,
 } from './components/FiveDimensionsCommandCenter';
 import { useAppAuth } from './lib/useAppAuth';
+import { usePrototypeWorkspace } from './lib/usePrototypeWorkspace';
 
 type ActiveTab =
   | 'role_home'
@@ -237,6 +238,48 @@ export function App() {
     INITIAL_TALENT_UPSKILL_COURSES
   );
   const [nhtBatches, setNhtBatches] = useState<NhtBatchRecord[]>(INITIAL_NHT_BATCHES);
+
+  const workspaceSnapshot = useMemo(() => ({
+    projects,
+    associates,
+    userGroups,
+    defects,
+    calibrations,
+    learningModules,
+    complianceCourses,
+    sops,
+    uploadBatches,
+    tickets,
+    weeklyAssessments,
+    questionBank,
+    csModules,
+    csEnrollments,
+    upskillCourses,
+    nhtBatches,
+  }), [
+    projects, associates, userGroups, defects, calibrations, learningModules,
+    complianceCourses, sops, uploadBatches, tickets, weeklyAssessments,
+    questionBank, csModules, csEnrollments, upskillCourses, nhtBatches,
+  ]);
+  const hydrateWorkspace = useCallback((data: typeof workspaceSnapshot) => {
+    setProjects(data.projects);
+    setAssociates(data.associates);
+    setUserGroups(data.userGroups);
+    setDefects(data.defects);
+    setCalibrations(data.calibrations);
+    setLearningModules(data.learningModules);
+    setComplianceCourses(data.complianceCourses);
+    setSops(data.sops);
+    setUploadBatches(data.uploadBatches);
+    setTickets(data.tickets);
+    setWeeklyAssessments(data.weeklyAssessments);
+    setQuestionBank(data.questionBank);
+    setCsModules(data.csModules);
+    setCsEnrollments(data.csEnrollments);
+    setUpskillCourses(data.upskillCourses);
+    setNhtBatches(data.nhtBatches);
+  }, []);
+  const workspaceSync = usePrototypeWorkspace(workspaceSnapshot, hydrateWorkspace, auth.user);
 
   // Toast Notification
   const [toastMessage, setToastMessage] = useState<string | null>(null);
@@ -858,8 +901,8 @@ export function App() {
               : 'text-amber-800 bg-amber-50 border border-amber-200'
           }`}>
             {auth.configured
-              ? 'Signed in · workspace records remain sample data until migrated'
-              : 'Prototype: sample data · changes reset on refresh · role switch is not access control'}
+              ? 'Signed in · synthetic workspace prototype'
+              : 'Synthetic prototype · saved in this browser · role switch is not access control'}
           </span>
 
           {/* Global RCM Filters + Quick Actions */}
@@ -965,6 +1008,8 @@ export function App() {
             associate={selectedAssociate}
             availableRoles={availablePersonas}
             isRolePreview={!auth.configured}
+            syncStatus={workspaceSync.status}
+            syncError={workspaceSync.error}
             metrics={{
               projectCount: filteredProjects.length,
               projectHealth: orgSummary.avgHealth,
@@ -981,6 +1026,11 @@ export function App() {
             }}
             onSelectRole={handleSelectPersona}
             onOpenTab={setActiveTab}
+            onSeedWorkspace={() => {
+              void workspaceSync.seedSyntheticWorkspace().then((seeded) => {
+                if (seeded) triggerToast('Shared synthetic workspace seeded in Supabase.');
+              });
+            }}
           />
         )}
         {/* OBVIOUSLY VISIBLE 5-DIMENSION VISUAL SWITCHER DECK */}

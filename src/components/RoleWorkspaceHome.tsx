@@ -16,6 +16,7 @@ import {
   type LucideIcon,
 } from 'lucide-react';
 import { APP_ROLE_LABELS, AssociateProfile, UserRole } from '../types/rcm';
+import type { PrototypeSyncStatus } from '../lib/usePrototypeWorkspace';
 
 type WorkspaceDestination =
   | 'admin_studio'
@@ -55,6 +56,8 @@ interface RoleWorkspaceHomeProps {
   associate: AssociateProfile;
   availableRoles: UserRole[];
   isRolePreview: boolean;
+  syncStatus: PrototypeSyncStatus;
+  syncError: string | null;
   metrics: {
     projectCount: number;
     projectHealth: string;
@@ -71,6 +74,7 @@ interface RoleWorkspaceHomeProps {
   };
   onSelectRole: (role: UserRole) => void;
   onOpenTab: (tab: WorkspaceDestination) => void;
+  onSeedWorkspace: () => void;
 }
 
 const roleExperience: Record<
@@ -217,9 +221,12 @@ export function RoleWorkspaceHome({
   associate,
   availableRoles,
   isRolePreview,
+  syncStatus,
+  syncError,
   metrics,
   onSelectRole,
   onOpenTab,
+  onSeedWorkspace,
 }: RoleWorkspaceHomeProps) {
   const experience = roleExperience[role];
   const RoleIcon = experience.icon;
@@ -343,9 +350,36 @@ export function RoleWorkspaceHome({
           <p className="mt-4 border-t border-slate-100 pt-4 text-[11px] leading-relaxed text-slate-500">
             {role === 'associate'
               ? `Profile: ${associate.name} · ${associate.projectName} · ${associate.shift}`
-              : 'Workspace figures currently use the app’s sample records until screen data is connected to Supabase.'}
+              : 'The displayed records are synthetic prototype data, not production or customer information.'}
           </p>
+          {role === 'admin' && syncStatus === 'unseeded' && (
+            <button
+              type="button"
+              onClick={onSeedWorkspace}
+              className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-indigo-600 px-4 py-3 text-xs font-bold text-white transition hover:bg-indigo-500"
+            >
+              <Shield className="h-4 w-4" />
+              Seed shared synthetic workspace
+            </button>
+          )}
         </aside>
+      </div>
+      <div className={`rounded-2xl border px-4 py-3 text-xs ${
+        syncStatus === 'connected'
+          ? 'border-emerald-200 bg-emerald-50 text-emerald-900'
+          : syncStatus === 'error'
+            ? 'border-rose-200 bg-rose-50 text-rose-900'
+            : 'border-slate-200 bg-white text-slate-600'
+      }`} role={syncError ? 'alert' : 'status'}>
+        {syncError ?? (
+          syncStatus === 'connected'
+            ? 'Supabase connected · synthetic workspace saves automatically.'
+            : syncStatus === 'unseeded'
+              ? 'Supabase is connected, but the shared synthetic workspace has not been seeded.'
+              : syncStatus === 'loading'
+                ? 'Connecting to the synthetic workspace…'
+                : 'Local prototype · synthetic changes are saved in this browser only.'
+        )}
       </div>
     </section>
   );
