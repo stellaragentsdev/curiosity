@@ -97,12 +97,11 @@ export function generateTrainerSamResponse(query: string): Omit<AiChatMessage, '
   }
 
   return {
-    text: `I analyzed your query ("${query}") against our active **RCM SOPs, Payer Playbooks, CARC/RARC Denial Matrix, and L&D Governance Rules**. Here is the recommended operational protocol:`,
-    citations: ['SOP-OR-12 v3.4', 'SOP-CV-08 v2.1', 'FLASH-2026-11-06', 'RCM Quality & BQT Rubric'],
+    text: `This demo has no keyword-matched answer for "${query}". It did not search live SOPs, payer playbooks, or governance rules. Verify the right protocol with your approved sources.`,
+    citations: ['Sample SOP references only — not verified for this query'],
     actionableSteps: [
-      'Verify the specific CARC & RARC group codes on the 835 ERA before selecting an adjustment or appeal action.',
-      'Check the Specialty Playbook for client-specific write-off thresholds and required supporting clinical documents (Op-Note, Auth #, 277CA).',
-      'Document your action using the standardized 8-point SOAP note template in the PMS to ensure 100% QA audit compliance.',
+      'Check the current payer policy and the applicable client-specific SOP before taking action.',
+      'Confirm denial codes and filing requirements in the source remittance and payer portal.',
     ],
   };
 }

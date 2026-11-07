@@ -35,6 +35,7 @@ import {
   RcmTower,
   SopPlaybookItem,
   UserGroup,
+  UserRole,
   WeeklyAssessmentPillar,
 } from '../types/rcm';
 import {
@@ -53,7 +54,7 @@ export type AppDimensionId =
   | 'dim_cs_training'
   | 'dim_games_hub';
 
-export type EnterprisePersona = 'admin' | 'operations' | 'trainer' | 'associate';
+export type EnterprisePersona = UserRole;
 
 export interface TalentUpskillCourse {
   id: string;
@@ -329,19 +330,20 @@ export const CuriosityBrandLogo: React.FC<{ onClick?: () => void }> = ({ onClick
               <stop offset="100%" stopColor="#F59E0B" />
             </linearGradient>
           </defs>
-          {/* Open Learning Book Base */}
-          <path
-            d="M8 27C12 24.5 16.5 24.5 20 27C23.5 24.5 28 24.5 32 27V15C28 12.5 23.5 12.5 20 15C16.5 12.5 12 12.5 8 15V27Z"
-            fill="url(#curiosityGrad)"
-            opacity="0.18"
-          />
-          {/* Curiosity Compass Spark */}
-          <path
-            d="M20 5L23.2 14.2L32.5 17.5L23.2 20.8L20 30L16.8 20.8L7.5 17.5L16.8 14.2L20 5Z"
-            fill="url(#curiosityGrad)"
-          />
-          <circle cx="20" cy="17.5" r="3.2" fill="#FFFFFF" />
-          <circle cx="30" cy="9" r="2" fill="#F59E0B" />
+          <path d="M20 18V10M20 11L16 8M20 11L24 8" stroke="url(#curiosityGrad)" strokeWidth="2" strokeLinecap="round" />
+          <rect x="15" y="5" width="10" height="7" rx="2" fill="url(#curiosityGrad)" />
+          <circle cx="20" cy="8.5" r="1.5" fill="#FFFFFF" />
+          <path d="M11 18H29L32 23V27H8V23L11 18Z" fill="url(#curiosityGrad)" opacity="0.22" />
+          <path d="M13 19H27V25H13Z" fill="url(#curiosityGrad)" />
+          <path d="M7 20H12V25H7ZM28 20H33V25H28Z" fill="url(#curiosityGrad)" opacity="0.55" />
+          <path d="M10 26L7 30M30 26L33 30M14 25L12 30M26 25L28 30" stroke="url(#curiosityGrad)" strokeWidth="1.8" strokeLinecap="round" />
+          <circle cx="9" cy="31" r="3" fill="#0F766E" />
+          <circle cx="20" cy="31" r="3" fill="#4F46E5" />
+          <circle cx="31" cy="31" r="3" fill="#0F766E" />
+          <circle cx="9" cy="31" r="1" fill="#FFFFFF" />
+          <circle cx="20" cy="31" r="1" fill="#FFFFFF" />
+          <circle cx="31" cy="31" r="1" fill="#FFFFFF" />
+          <path d="M31 11L32 13L34 14L32 15L31 17L30 15L28 14L30 13L31 11Z" fill="#F59E0B" />
         </svg>
       </div>
     </div>
@@ -351,11 +353,11 @@ export const CuriosityBrandLogo: React.FC<{ onClick?: () => void }> = ({ onClick
           Curiosity
         </span>
         <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-indigo-50 text-indigo-700 border border-indigo-200">
-          RCM Learning OS
+          L&amp;D Intell
         </span>
       </div>
       <p className="text-[11px] font-medium text-slate-500">
-        Visual Learning, Process Intelligence & Quality Certification Studio
+        Interactive, AI-enabled Learning Intelligence
       </p>
     </div>
   </div>
@@ -430,6 +432,7 @@ export const VisualRadialGauge: React.FC<{
 interface VisualDimensionSwitcherProps {
   activeDimension: AppDimensionId;
   onSelectDimension: (dim: AppDimensionId) => void;
+  availableDimensions?: AppDimensionId[];
   orgCompliancePct: number;
   avgProjectHealthPct: number;
   nhtPassPct: number;
@@ -440,6 +443,7 @@ interface VisualDimensionSwitcherProps {
 export const VisualDimensionSwitcher: React.FC<VisualDimensionSwitcherProps> = ({
   activeDimension,
   onSelectDimension,
+  availableDimensions,
   orgCompliancePct,
   avgProjectHealthPct,
   nhtPassPct,
@@ -516,7 +520,7 @@ export const VisualDimensionSwitcher: React.FC<VisualDimensionSwitcherProps> = (
 
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
-      {dimensions.map((d) => {
+      {dimensions.filter((d) => !availableDimensions || availableDimensions.includes(d.id)).map((d) => {
         const Icon = d.icon;
         const isActive = activeDimension === d.id;
         return (
@@ -580,6 +584,8 @@ export const VisualDimensionSwitcher: React.FC<VisualDimensionSwitcherProps> = (
 interface RelationalContextBarProps {
   activePersona: EnterprisePersona;
   onSelectPersona: (p: EnterprisePersona) => void;
+  availablePersonas?: EnterprisePersona[];
+  isRolePreview?: boolean;
   selectedProjectId: string;
   onSelectProjectId: (id: string) => void;
   selectedGroupId: string;
@@ -594,6 +600,8 @@ interface RelationalContextBarProps {
 export const RelationalContextBar: React.FC<RelationalContextBarProps> = ({
   activePersona,
   onSelectPersona,
+  availablePersonas,
+  isRolePreview = true,
   selectedProjectId,
   onSelectProjectId,
   selectedGroupId,
@@ -624,14 +632,14 @@ export const RelationalContextBar: React.FC<RelationalContextBarProps> = ({
           </span>
 
           {/* Project Pill */}
-          <div className="flex items-center gap-1.5 bg-slate-50 border border-slate-200 rounded-xl px-2.5 py-1">
+          <div className="flex w-full min-w-0 items-center gap-1.5 bg-slate-50 border border-slate-200 rounded-xl px-2.5 py-1 sm:w-auto">
             <Building2 className="w-3.5 h-3.5 text-indigo-600" />
             <span className="text-[11px] font-semibold text-slate-500">Project:</span>
             <select
               aria-label="Relational Project Selector"
               value={selectedProjectId}
               onChange={(e) => onSelectProjectId(e.target.value)}
-              className="bg-transparent text-xs font-bold text-slate-900 focus:outline-none"
+              className="min-w-0 flex-1 bg-transparent text-xs font-bold text-slate-900 focus:outline-none sm:flex-none sm:max-w-[260px]"
             >
               {projects.map((p) => (
                 <option key={p.id} value={p.id}>
@@ -642,14 +650,14 @@ export const RelationalContextBar: React.FC<RelationalContextBarProps> = ({
           </div>
 
           {/* User Group Pill */}
-          <div className="flex items-center gap-1.5 bg-slate-50 border border-slate-200 rounded-xl px-2.5 py-1">
+          <div className="flex w-full min-w-0 items-center gap-1.5 bg-slate-50 border border-slate-200 rounded-xl px-2.5 py-1 sm:w-auto">
             <UsersRound className="w-3.5 h-3.5 text-purple-600" />
             <span className="text-[11px] font-semibold text-slate-500">Group:</span>
             <select
               aria-label="Relational User Group Selector"
               value={selectedGroupId}
               onChange={(e) => onSelectGroupId(e.target.value)}
-              className="bg-transparent text-xs font-bold text-slate-900 focus:outline-none"
+              className="min-w-0 flex-1 bg-transparent text-xs font-bold text-slate-900 focus:outline-none sm:flex-none sm:max-w-[260px]"
             >
               {userGroups.map((g) => (
                 <option key={g.id} value={g.id}>
@@ -660,14 +668,14 @@ export const RelationalContextBar: React.FC<RelationalContextBarProps> = ({
           </div>
 
           {/* Associate Pill */}
-          <div className="flex items-center gap-1.5 bg-slate-50 border border-slate-200 rounded-xl px-2.5 py-1">
+          <div className="flex w-full min-w-0 items-center gap-1.5 bg-slate-50 border border-slate-200 rounded-xl px-2.5 py-1 sm:w-auto">
             <Users className="w-3.5 h-3.5 text-emerald-600" />
             <span className="text-[11px] font-semibold text-slate-500">User:</span>
             <select
               aria-label="Relational Associate Selector"
               value={selectedUserId}
               onChange={(e) => onSelectUserId(e.target.value)}
-              className="bg-transparent text-xs font-bold text-slate-900 focus:outline-none"
+              className="min-w-0 flex-1 bg-transparent text-xs font-bold text-slate-900 focus:outline-none sm:flex-none sm:max-w-[260px]"
             >
               {associates.map((a) => (
                 <option key={a.id} value={a.id}>
@@ -691,15 +699,22 @@ export const RelationalContextBar: React.FC<RelationalContextBarProps> = ({
         </div>
 
         {/* Clean Role Lens Switcher */}
-        <div className="flex flex-wrap items-center gap-1 bg-slate-100 p-1 rounded-xl border border-slate-200">
+        <div className="flex items-center gap-2">
+          {isRolePreview && (
+            <span className="text-[10px] font-semibold text-slate-500">
+              Preview role · not access control
+            </span>
+          )}
+          <div className="flex flex-wrap items-center gap-1 bg-slate-100 p-1 rounded-xl border border-slate-200">
           {(
             [
               { id: 'admin', label: 'Admin', color: 'bg-indigo-600 keep-white-text' },
+              { id: 'learning_development', label: 'L&D', color: 'bg-violet-600 keep-white-text' },
+              { id: 'quality_assurance', label: 'QA', color: 'bg-amber-600 keep-white-text' },
               { id: 'operations', label: 'Operations', color: 'bg-sky-600 keep-white-text' },
-              { id: 'trainer', label: 'Trainer / QA', color: 'bg-amber-600 keep-white-text' },
               { id: 'associate', label: 'Associate', color: 'bg-emerald-600 keep-white-text' },
             ] as { id: EnterprisePersona; label: string; color: string }[]
-          ).map((p) => (
+          ).filter((p) => !availablePersonas || availablePersonas.includes(p.id)).map((p) => (
             <button
               key={p.id}
               onClick={() => onSelectPersona(p.id)}
@@ -712,6 +727,7 @@ export const RelationalContextBar: React.FC<RelationalContextBarProps> = ({
               {p.label}
             </button>
           ))}
+          </div>
         </div>
       </div>
 

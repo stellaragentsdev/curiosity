@@ -15,7 +15,15 @@ export type ProviderSpecialty =
   | 'Behavioral Health'
   | 'Gastroenterology';
 
-export type UserRole = 'admin' | 'qa_trainer' | 'associate';
+export const APP_ROLE_LABELS = {
+  admin: 'Admin',
+  learning_development: 'L&D',
+  quality_assurance: 'QA',
+  operations: 'Operations',
+  associate: 'Associate',
+} as const;
+
+export type UserRole = keyof typeof APP_ROLE_LABELS;
 
 export type GovernanceStage =
   | 'Top Quartile (Q1)'
@@ -351,7 +359,7 @@ export interface DailyUploadBatch {
   autoTrainingsAssigned: number;
   bqtPipFlagsRaised: number;
   uploadedBy: string;
-  status: 'Synced & Governed' | 'Validation Warning';
+  status: 'Synced & Governed' | 'Validation Warning' | 'Demo Simulation';
 }
 
 export interface TrainerDirectoryProfile {

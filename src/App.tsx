@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useRef } from 'react';
+import React, { useState, useMemo, useRef, useEffect } from 'react';
 import {
   Activity,
   Award,
@@ -21,6 +21,10 @@ import {
   GraduationCap,
   Layers,
   LayoutDashboard,
+  LoaderCircle,
+  LogOut,
+  Mail,
+  Network,
   Play,
   Plus,
   RefreshCw,
@@ -58,6 +62,7 @@ import {
   RebuttalStatus,
   SopPlaybookItem,
   UserGroup,
+  APP_ROLE_LABELS,
   UserRole,
 } from './types/rcm';
 import {
@@ -82,7 +87,9 @@ import {
   QUICK_AI_PROMPTS,
 } from './utils/rcmAiAssistant';
 import { AdminGovernanceStudio } from './components/AdminGovernanceStudio';
+import { CreatorArchitecturePage } from './components/CreatorArchitecturePage';
 import { AssociateWorkspace } from './components/AssociateWorkspace';
+import { RoleWorkspaceHome } from './components/RoleWorkspaceHome';
 import { TrainerWorkbench, ReportsCenter } from './components/TrainerAndReportsHub';
 import {
   ContinuousLearningDashboard,
@@ -111,8 +118,10 @@ import {
   VisualDimensionSwitcher,
   VisualRadialGauge,
 } from './components/FiveDimensionsCommandCenter';
+import { useAppAuth } from './lib/useAppAuth';
 
 type ActiveTab =
+  | 'role_home'
   | 'org_learning'
   | 'dashboard'
   | 'project_directories'
@@ -130,14 +139,76 @@ type ActiveTab =
   | 'quality'
   | 'learning'
   | 'compliance'
-  | 'knowledge';
+  | 'knowledge'
+  | 'creator';
+
+const ROLE_TABS: Record<UserRole, ActiveTab[]> = {
+  admin: [
+    'role_home', 'dashboard', 'org_learning', 'project_directories', 'nht_training', 'cs_training',
+    'games_hub', 'clp_dashboard', 'training_modules', 'admin_studio', 'trainer_hub',
+    'reports', 'associate_portal', 'upload', 'scorecards', 'quality', 'learning',
+    'compliance', 'knowledge', 'creator',
+  ],
+  learning_development: [
+    'role_home', 'org_learning', 'nht_training', 'cs_training', 'games_hub', 'training_modules',
+    'reports', 'knowledge', 'creator',
+  ],
+  quality_assurance: [
+    'role_home', 'dashboard', 'project_directories', 'nht_training', 'clp_dashboard', 'training_modules',
+    'trainer_hub', 'reports', 'upload', 'scorecards', 'quality', 'knowledge',
+  ],
+  operations: [
+    'role_home', 'dashboard', 'project_directories', 'reports', 'upload', 'scorecards', 'knowledge',
+  ],
+  associate: ['role_home', 'org_learning', 'games_hub', 'training_modules', 'associate_portal', 'knowledge'],
+};
+
+const DIMENSION_TABS: Record<AppDimensionId, ActiveTab[]> = {
+  dim_org_learning: ['org_learning'],
+  dim_process_intell: [
+    'dashboard', 'project_directories', 'scorecards', 'clp_dashboard', 'trainer_hub',
+    'quality', 'associate_portal', 'admin_studio', 'reports', 'upload', 'knowledge', 'creator',
+  ],
+  dim_nht_training: ['nht_training', 'training_modules'],
+  dim_cs_training: ['cs_training'],
+  dim_games_hub: ['games_hub'],
+};
 
 export function App() {
+  const auth = useAppAuth();
+  const [authEmail, setAuthEmail] = useState('');
   // Global 5-Dimension & Role State
   const [activeDimension, setActiveDimension] = useState<AppDimensionId>('dim_process_intell');
-  const [activePersona, setActivePersona] = useState<EnterprisePersona>('admin');
-  const [role, setRole] = useState<UserRole>('admin');
-  const [activeTab, setActiveTab] = useState<ActiveTab>('dashboard');
+  const [selectedRole, setSelectedRole] = useState<UserRole>('admin');
+  const availablePersonas: EnterprisePersona[] = auth.configured
+    ? auth.profile?.roles ?? []
+    : (Object.keys(APP_ROLE_LABELS) as UserRole[]);
+  const activePersona: EnterprisePersona = availablePersonas.includes(selectedRole)
+    ? selectedRole
+    : availablePersonas[0] ?? 'associate';
+  const role = activePersona;
+  const allowedTabs = ROLE_TABS[role];
+  const availableDimensions = (Object.keys(DIMENSION_TABS) as AppDimensionId[]).filter((dimension) =>
+    DIMENSION_TABS[dimension].some((tab) => allowedTabs.includes(tab))
+  );
+  const [activeTab, setActiveTabValue] = useState<ActiveTab>(ROLE_TABS[role][0]);
+  const currentTab = allowedTabs.includes(activeTab) ? activeTab : ROLE_TABS[role][0];
+  const setActiveTab = (tab: ActiveTab) => {
+    if (allowedTabs.includes(tab)) setActiveTabValue(tab);
+  };
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: 'instant' });
+  }, [currentTab]);
+  useEffect(() => {
+    if (!allowedTabs.includes(activeTab)) setActiveTabValue(ROLE_TABS[role][0]);
+    const visibleTab = allowedTabs.includes(activeTab) ? activeTab : ROLE_TABS[role][0];
+    if (!DIMENSION_TABS[activeDimension].includes(visibleTab)) {
+      const dimension = (Object.keys(DIMENSION_TABS) as AppDimensionId[]).find((candidate) =>
+        DIMENSION_TABS[candidate].includes(visibleTab)
+      );
+      if (dimension) setActiveDimension(dimension);
+    }
+  }, [activeDimension, activeTab, allowedTabs, role]);
   const [adminSubTab, setAdminSubTab] = useState<'projects' | 'users' | 'courses' | 'groups'>('projects');
   const [focusedProjectId, setFocusedProjectId] = useState<string>('PRJ-CARD-01');
   const [focusedGroupId, setFocusedGroupId] = useState<string>('GRP-ORTHO-AR');
@@ -177,30 +248,20 @@ export function App() {
   };
 
   const handleSelectDimension = (dim: AppDimensionId) => {
+    if (!availableDimensions.includes(dim)) return;
     setActiveDimension(dim);
-    if (dim === 'dim_org_learning') {
-      setActiveTab('org_learning');
-    } else if (dim === 'dim_process_intell') {
-      setActiveTab('dashboard');
-    } else if (dim === 'dim_nht_training') {
-      setActiveTab('nht_training');
-    } else if (dim === 'dim_cs_training') {
-      setActiveTab('cs_training');
-    } else if (dim === 'dim_games_hub') {
-      setActiveTab('games_hub');
-    }
+    const firstAllowedTab = DIMENSION_TABS[dim].find((tab) => allowedTabs.includes(tab));
+    if (firstAllowedTab) setActiveTab(firstAllowedTab);
   };
 
   const handleSelectPersona = (persona: EnterprisePersona) => {
-    setActivePersona(persona);
-    if (persona === 'admin' || persona === 'operations') {
-      setRole('admin');
-    } else if (persona === 'trainer') {
-      setRole('qa_trainer');
-    } else {
-      setRole('associate');
+    if (!availablePersonas.includes(persona)) return;
+    setSelectedRole(persona);
+    const nextTab: ActiveTab = 'role_home';
+    setActiveTabValue(nextTab);
+    if (!auth.configured) {
+      triggerToast(`Previewing the ${APP_ROLE_LABELS[persona]} role. This preview does not grant or enforce access.`);
     }
-    triggerToast(`Switched Active Role Lens to ${persona.toUpperCase()}. Relational data context synchronized across all 5 dimensions.`);
   };
 
   // Helper to jump directly to L&D Admin Studio sub-views (Project Profile, User Profile, Courses, Groups)
@@ -209,6 +270,7 @@ export function App() {
     projId?: string,
     usrId?: string
   ) => {
+    if (!allowedTabs.includes('admin_studio')) return;
     setAdminSubTab(sub);
     if (projId) setFocusedProjectId(projId);
     if (usrId) setFocusedUserId(usrId);
@@ -258,7 +320,7 @@ export function App() {
       id: 'AI-WELCOME',
       sender: 'assistant',
       timestamp: '09:15 IST',
-      text: 'Hello! I am **Curiosity AI**, your Medical Billing RCM Learning & Performance Intelligence Co-Pilot. Ask me about **CARC/RARC denial codes**, **Specialty Modifiers (-25, -59/XS, -PT/-33)**, **Payer Playbooks**, **BQT/PIP SLA rules**, or **Annual HIPAA & POSH Compliance**.',
+      text: 'Hello! I am the **Trainer Sam RCM Reference Assistant (demo)**. I use keyword-matched sample responses, not a live AI model or current payer data. Verify guidance against your approved client and payer sources. Ask me about **CARC/RARC denial codes**, **Specialty Modifiers (-25, -59/XS, -PT/-33)**, **Payer Playbooks**, **BQT/PIP SLA rules**, or **Annual HIPAA & POSH Compliance**.',
       citations: ['SOP-OR-12 v3.4', 'SOP-CV-08 v2.1', 'COMP-HIPAA-2026'],
     },
   ]);
@@ -314,9 +376,12 @@ export function App() {
       filteredProjects.reduce((acc, p) => acc + p.qualitySlaPct, 0) / (filteredProjects.length || 1);
     const totalBqt = filteredProjects.reduce((acc, p) => acc + p.bqtCount, 0);
     const totalPip = filteredProjects.reduce((acc, p) => acc + p.pipCount, 0);
-    const pendingRebuttals = defects.filter((d) => d.rebuttalStatus === 'Rebuttal Pending').length;
+    const pendingRebuttals = filteredDefects.filter(
+      (d) => d.rebuttalStatus === 'Rebuttal Pending'
+    ).length;
     const avgCompliance =
-      complianceCourses.reduce((acc, c) => acc + c.orgCompletionPct, 0) / complianceCourses.length;
+      complianceCourses.reduce((acc, c) => acc + c.orgCompletionPct, 0) /
+      (complianceCourses.length || 1);
     return {
       avgHealth: avgHealth.toFixed(1),
       avgProd: avgProd.toFixed(1),
@@ -326,33 +391,34 @@ export function App() {
       pendingRebuttals,
       avgCompliance: avgCompliance.toFixed(1),
     };
-  }, [filteredProjects, defects, complianceCourses]);
+  }, [filteredProjects, filteredDefects, complianceCourses]);
 
   const selectedAssociate = useMemo(() => {
     return associates.find((a) => a.id === selectedAssocId) || associates[0];
   }, [associates, selectedAssocId]);
 
   // Handlers
-  const handleSimulateBatchUpload = (fileName?: string) => {
+  const handleSimulateBatchUpload = () => {
+    const uploadedAt = new Date();
     const newBatch: DailyUploadBatch = {
       id: `BATCH-${Date.now().toString().slice(-6)}`,
-      uploadedAt: '2026-11-07 09:35 IST (Just Now)',
+      uploadedAt: uploadedAt.toLocaleString(),
       sourceSystem: uploadSource,
-      fileName: fileName || `RCM_${uploadSource.split(' ')[0]}_2026-11-07.csv`,
+      fileName: `DEMO_${uploadSource.split(' ')[0]}_batch.csv`,
       projectScope:
         selectedSpecialty === 'All Specialties'
           ? 'All 6 Provider Specialties'
           : selectedSpecialty,
-      rowsImported: 148,
-      slaBreachesDetected: 7,
-      autoTrainingsAssigned: 7,
-      bqtPipFlagsRaised: 2,
+      rowsImported: 0,
+      slaBreachesDetected: 0,
+      autoTrainingsAssigned: 0,
+      bqtPipFlagsRaised: 0,
       uploadedBy: role === 'admin' ? 'Samrat Bose (L&D Admin)' : 'Deepa Madhavan (QA Lead)',
-      status: 'Synced & Governed',
+      status: 'Demo Simulation',
     };
     setUploadBatches((prev) => [newBatch, ...prev]);
     triggerToast(
-      `Uploaded ${newBatch.fileName}: 148 rows synced, 7 defect-based weekly modules auto-assigned, 2 BQT flags updated.`
+      'Demo batch recorded. No file was imported, no rows were synced, and no governance actions were performed.'
     );
   };
 
@@ -373,26 +439,6 @@ export function App() {
           ).toFixed(1)
         );
 
-        let newStage: GovernanceStage = a.governanceStage;
-        const updatedModules = [...a.assignedWeeklyModules];
-        const belowQa = manualQualityPct < a.qualityTargetPct;
-        const nextConsecutiveWeeks = belowQa ? Math.min(4, a.consecutiveWeeksBelowQa + 1) : 0;
-
-        if (nextConsecutiveWeeks >= 4 || manualQualityPct < 86) {
-          newStage = 'PIP - 15 Days (4 Consecutive Wks Below QA)';
-          if (!updatedModules.includes('MOD-PIP-105')) updatedModules.push('MOD-PIP-105');
-        } else if (nextConsecutiveWeeks === 3) {
-          newStage = 'BQT (3 Consecutive Wks Below QA)';
-          if (!updatedModules.includes('MOD-BQT-102')) updatedModules.push('MOD-BQT-102');
-        } else if (nextConsecutiveWeeks >= 1) {
-          newStage = 'Defect-Based Training (1-2 Wks Below QA)';
-          if (!updatedModules.includes('MOD-WK-101')) updatedModules.push('MOD-WK-101');
-        } else if (manualQualityPct >= 98.5 && prodPct >= 102) {
-          newStage = 'Top Quartile (Q1)';
-        } else {
-          newStage = 'Core Performer (Q2-Q3)';
-        }
-
         return {
           ...a,
           dailyActual: manualDailyActual,
@@ -402,15 +448,11 @@ export function App() {
           tmsUtilizationPct: tmsPct,
           ahtMinutes: manualAht,
           compositeScore: composite,
-          governanceStage: newStage,
-          consecutiveWeeksBelowQa: nextConsecutiveWeeks,
-          pipDaysRemaining: nextConsecutiveWeeks >= 4 ? 15 : undefined,
-          assignedWeeklyModules: updatedModules,
         };
       })
     );
     triggerToast(
-      `Synced Daily Production, Quality & TMS for associate. Scorecard & BQT/PIP governance automatically recalculated!`
+      'Daily production, quality, TMS, and scorecard metrics updated. Weekly BQT/PIP streaks and training assignments were not changed.'
     );
   };
 
@@ -680,6 +722,100 @@ export function App() {
     return u?.pktScore || 92;
   }, [associates, focusedUserId]);
 
+  if (auth.configurationError) {
+    return (
+      <div className="min-h-screen bg-slate-950 px-4 py-12 flex items-center justify-center text-white">
+        <div className="w-full max-w-lg rounded-3xl border border-rose-900 bg-slate-900 p-7">
+          <h1 className="text-xl font-black">Supabase configuration is incomplete</h1>
+          <p role="alert" className="mt-2 text-sm leading-relaxed text-slate-300">{auth.configurationError}</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (auth.configured && auth.loading) {
+    return (
+      <div className="min-h-screen bg-slate-950 text-white flex items-center justify-center">
+        <div className="flex items-center gap-3 text-sm font-semibold">
+          <LoaderCircle className="h-5 w-5 animate-spin text-teal-300" />
+          Loading your secure workspace…
+        </div>
+      </div>
+    );
+  }
+
+  if (auth.configured && !auth.user) {
+    return (
+      <div className="min-h-screen bg-slate-950 px-4 py-12 flex items-center justify-center">
+        <form
+          onSubmit={(event) => {
+            event.preventDefault();
+            void auth.sendSignInLink(authEmail.trim());
+          }}
+          className="w-full max-w-md rounded-3xl border border-slate-700 bg-slate-900 p-7 shadow-2xl"
+        >
+          <div className="mb-5 flex items-center gap-3">
+            <div className="rounded-2xl bg-indigo-500/15 p-3 text-indigo-300"><Mail className="h-6 w-6" /></div>
+            <div>
+              <p className="text-xs font-bold uppercase tracking-widest text-teal-300">Curiosity · L&amp;D Intell</p>
+              <h1 className="mt-1 text-xl font-black text-white">Sign in to your workspace</h1>
+            </div>
+          </div>
+          <label htmlFor="auth-email" className="mb-1.5 block text-xs font-semibold text-slate-300">Work email</label>
+          <input
+            id="auth-email"
+            type="email"
+            autoComplete="email"
+            required
+            value={authEmail}
+            onChange={(event) => setAuthEmail(event.target.value)}
+            className="w-full rounded-xl border border-slate-600 bg-slate-950 px-3 py-2.5 text-sm text-white outline-none focus:border-teal-400"
+            placeholder="you@company.com"
+          />
+          <button
+            type="submit"
+            disabled={!authEmail.trim()}
+            className="mt-4 w-full rounded-xl bg-indigo-500 px-4 py-2.5 text-sm font-bold text-white transition-colors hover:bg-indigo-400 disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            Email me a secure sign-in link
+          </button>
+          {auth.emailSent && <p className="mt-3 text-sm text-emerald-300">Sign-in link sent. Check your inbox to continue.</p>}
+          {auth.error && <p role="alert" className="mt-3 text-sm text-rose-300">{auth.error}</p>}
+          <p className="mt-5 text-xs leading-relaxed text-slate-400">
+            Access is granted only to roles assigned to your profile. Contact your administrator if you need an invitation or role change.
+          </p>
+        </form>
+      </div>
+    );
+  }
+
+  if (auth.configured && auth.user && (auth.error || !auth.profile || !auth.profile.roles.length)) {
+    return (
+      <div className="min-h-screen bg-slate-950 px-4 py-12 flex items-center justify-center text-white">
+        <div className="w-full max-w-lg rounded-3xl border border-slate-700 bg-slate-900 p-7">
+          <h1 className="text-xl font-black">Workspace access is not ready</h1>
+          <p className="mt-2 text-sm leading-relaxed text-slate-300">
+            {auth.error || 'Your account does not have an assigned application role yet. Ask an administrator to assign one.'}
+          </p>
+          <button onClick={() => void auth.signOut()} className="mt-5 inline-flex items-center gap-2 rounded-xl bg-slate-700 px-4 py-2 text-sm font-bold hover:bg-slate-600">
+            <LogOut className="h-4 w-4" /> Sign out
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  if (auth.configured && !allowedTabs.includes(activeTab)) {
+    return (
+      <div className="min-h-screen bg-slate-950 text-white flex items-center justify-center">
+        <div className="flex items-center gap-3 text-sm font-semibold">
+          <LoaderCircle className="h-5 w-5 animate-spin text-teal-300" />
+          Opening your {APP_ROLE_LABELS[role]} workspace…
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen curiosity-light-surface bg-slate-50 text-slate-900 flex flex-col">
       {/* Top Notification Toast */}
@@ -704,10 +840,51 @@ export function App() {
         <div className="max-w-[1440px] mx-auto px-4 sm:px-6 py-3 flex flex-wrap items-center justify-between gap-4">
           {/* Custom Curiosity Brand Logo */}
           <CuriosityBrandLogo />
+          <button
+            type="button"
+            onClick={() => setActiveTab('role_home')}
+            aria-current={currentTab === 'role_home' ? 'page' : undefined}
+            className={`rounded-xl border px-3 py-2 text-xs font-bold transition ${
+              currentTab === 'role_home'
+                ? 'border-indigo-200 bg-indigo-50 text-indigo-800'
+                : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50'
+            }`}
+          >
+            My workspace
+          </button>
+          <span className={`text-[11px] font-medium rounded-lg px-2.5 py-1 ${
+            auth.configured
+              ? 'text-amber-900 bg-amber-50 border border-amber-200'
+              : 'text-amber-800 bg-amber-50 border border-amber-200'
+          }`}>
+            {auth.configured
+              ? 'Signed in · workspace records remain sample data until migrated'
+              : 'Prototype: sample data · changes reset on refresh · role switch is not access control'}
+          </span>
 
           {/* Global RCM Filters + Quick Actions */}
           <div className="flex flex-wrap items-center gap-2.5">
-            <div className="flex items-center gap-1.5 bg-slate-50 border border-slate-200 rounded-xl px-3 py-1.5">
+            {auth.configured && auth.profile && (
+              <div className="flex items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-3 py-1.5">
+                <span className="max-w-36 truncate text-xs font-semibold text-slate-700">{auth.profile.displayName}</span>
+                {availablePersonas.length > 1 && (
+                  <select
+                    aria-label="Switch assigned role"
+                    value={role}
+                    onChange={(event) => handleSelectPersona(event.target.value as UserRole)}
+                    className="max-w-32 rounded-md border-0 bg-transparent text-xs font-bold text-indigo-700 focus:outline-none"
+                  >
+                    {availablePersonas.map((assignedRole) => (
+                      <option key={assignedRole} value={assignedRole}>{APP_ROLE_LABELS[assignedRole]}</option>
+                    ))}
+                  </select>
+                )}
+                <button onClick={() => void auth.signOut()} className="rounded-md p-1 text-slate-500 hover:bg-slate-200 hover:text-slate-900" aria-label="Sign out">
+                  <LogOut className="h-4 w-4" />
+                </button>
+              </div>
+            )}
+            {currentTab !== 'role_home' && <div className="flex items-center gap-1.5 bg-slate-50 border border-slate-200 rounded-xl px-3 py-1.5">
               <Filter className="w-3.5 h-3.5 text-indigo-600" />
               <select
                 aria-label="Filter by RCM Tower"
@@ -722,9 +899,9 @@ export function App() {
                   </option>
                 ))}
               </select>
-            </div>
+            </div>}
 
-            <div className="flex items-center gap-1.5 bg-slate-50 border border-slate-200 rounded-xl px-3 py-1.5">
+            {currentTab !== 'role_home' && <div className="flex items-center gap-1.5 bg-slate-50 border border-slate-200 rounded-xl px-3 py-1.5">
               <Layers className="w-3.5 h-3.5 text-teal-600" />
               <select
                 aria-label="Filter by Provider Specialty"
@@ -741,15 +918,29 @@ export function App() {
                   </option>
                 ))}
               </select>
-            </div>
+            </div>}
 
-            <button
-              onClick={() => openAdminStudio('projects')}
-              className="px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 border border-slate-200 text-slate-800 text-xs font-bold flex items-center gap-1.5 transition-all"
-            >
-              <FolderKanban className="w-3.5 h-3.5 text-indigo-600" />
-              <span>Admin Studio</span>
-            </button>
+            {currentTab !== 'role_home' && role === 'admin' && (
+              <button
+                onClick={() => openAdminStudio('projects')}
+                className="px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 border border-slate-200 text-slate-800 text-xs font-bold flex items-center gap-1.5 transition-all"
+              >
+                <FolderKanban className="w-3.5 h-3.5 text-indigo-600" />
+                <span>Admin Studio</span>
+              </button>
+            )}
+            {currentTab !== 'role_home' && (role === 'admin' || role === 'learning_development') && (
+              <button
+                onClick={() => {
+                  setActiveDimension('dim_process_intell');
+                  setActiveTab('creator');
+                }}
+                className="flex items-center gap-1.5 rounded-xl border border-teal-200 bg-teal-50 px-3 py-1.5 text-xs font-bold text-teal-800 hover:bg-teal-100"
+              >
+                <Network className="h-3.5 w-3.5" />
+                <span>Creator map</span>
+              </button>
+            )}
 
             <button
               onClick={() => {
@@ -759,7 +950,7 @@ export function App() {
               className="keep-white-text flex items-center gap-2 px-3.5 py-2 rounded-xl bg-gradient-to-r from-indigo-600 to-teal-600 hover:from-indigo-500 hover:to-teal-500 text-white text-xs font-bold shadow-sm transition-all"
             >
               <Bot className="w-4 h-4" />
-              <span>Ask Curiosity AI</span>
+              <span>Ask Trainer Sam</span>
             </button>
           </div>
         </div>
@@ -767,37 +958,67 @@ export function App() {
 
       {/* Main Content Area */}
       <main className="flex-1 max-w-[1440px] w-full mx-auto px-4 sm:px-6 py-5 space-y-5">
+        {currentTab === 'role_home' && (
+          <RoleWorkspaceHome
+            role={role}
+            displayName={auth.profile?.displayName || selectedAssociate.name}
+            associate={selectedAssociate}
+            availableRoles={availablePersonas}
+            isRolePreview={!auth.configured}
+            metrics={{
+              projectCount: filteredProjects.length,
+              projectHealth: orgSummary.avgHealth,
+              productionSla: orgSummary.avgProd,
+              qualitySla: orgSummary.avgQual,
+              compliance: orgSummary.avgCompliance,
+              associateCount: filteredAssociates.length,
+              learningModuleCount: learningModules.length,
+              openTrainingTickets: tickets.filter((ticket) => ticket.status !== 'Closed — Summary Logged').length,
+              pendingRebuttals: orgSummary.pendingRebuttals,
+              defectCount: filteredDefects.length,
+              uploadCount: uploadBatches.length,
+              calibrationCount: calibrations.length,
+            }}
+            onSelectRole={handleSelectPersona}
+            onOpenTab={setActiveTab}
+          />
+        )}
         {/* OBVIOUSLY VISIBLE 5-DIMENSION VISUAL SWITCHER DECK */}
-        <VisualDimensionSwitcher
+        {currentTab !== 'role_home' && <VisualDimensionSwitcher
           activeDimension={activeDimension}
           onSelectDimension={handleSelectDimension}
+          availableDimensions={availableDimensions}
           orgCompliancePct={Number(orgSummary.avgCompliance)}
           avgProjectHealthPct={Number(orgSummary.avgHealth)}
           nhtPassPct={nhtAvgGatePct}
           csCertifiedPct={csCertifiedPct}
           activeUserPktPct={activeUserPktPct}
-        />
+        />}
 
         {/* COMPACT 1-LINE RELATIONAL CONTEXT RIBBON */}
-        <RelationalContextBar
-          activePersona={activePersona}
-          onSelectPersona={handleSelectPersona}
-          selectedProjectId={focusedProjectId}
-          onSelectProjectId={setFocusedProjectId}
-          selectedGroupId={focusedGroupId}
-          onSelectGroupId={setFocusedGroupId}
-          selectedUserId={focusedUserId}
-          onSelectUserId={(id) => {
-            setFocusedUserId(id);
-            setSelectedAssocId(id);
-          }}
-          projects={projects}
-          userGroups={userGroups}
-          associates={associates}
-        />
+        {!auth.configured && currentTab !== 'role_home' && (
+          <RelationalContextBar
+            activePersona={activePersona}
+            onSelectPersona={handleSelectPersona}
+            availablePersonas={availablePersonas}
+            isRolePreview
+            selectedProjectId={focusedProjectId}
+            onSelectProjectId={setFocusedProjectId}
+            selectedGroupId={focusedGroupId}
+            onSelectGroupId={setFocusedGroupId}
+            selectedUserId={focusedUserId}
+            onSelectUserId={(id) => {
+              setFocusedUserId(id);
+              setSelectedAssocId(id);
+            }}
+            projects={projects}
+            userGroups={userGroups}
+            associates={associates}
+          />
+        )}
 
         {/* SCOPED SUB-NAVIGATION BAR FOR DIMENSION 2 (PROCESS TRAINING INTELLIGENCE) */}
-        {activeDimension === 'dim_process_intell' && (
+        {currentTab !== 'role_home' && activeDimension === 'dim_process_intell' && (
           <div className="bg-white border border-slate-200 rounded-2xl p-2 shadow-xs flex flex-wrap items-center justify-between gap-2">
             <div className="flex flex-wrap items-center gap-1.5">
               {[
@@ -855,12 +1076,13 @@ export function App() {
                 },
                 {
                   id: 'knowledge',
-                  label: 'Curiosity AI & SOPs',
+                  label: 'RCM Reference Assistant & SOPs',
                   icon: Bot,
                 },
-              ].map((tab) => {
+                { id: 'creator', label: 'Creator Architecture Map', icon: Network },
+              ].filter((tab) => allowedTabs.includes(tab.id as ActiveTab)).map((tab) => {
                 const Icon = tab.icon;
-                const isActive = activeTab === tab.id;
+                const isActive = currentTab === tab.id;
                 return (
                   <button
                     key={tab.id}
@@ -891,10 +1113,12 @@ export function App() {
           </div>
         )}
 
+        {currentTab === 'creator' && <CreatorArchitecturePage />}
+
         {/* =====================================================================
             DIMENSION 1: MONITOR ORGANIZATIONAL LEARNING (COMPLIANCE, TALENT UPSKILL, REPORTS)
            ===================================================================== */}
-        {activeTab === 'org_learning' && (
+        {currentTab === 'org_learning' && (
           <OrgLearningDimensionHub
             complianceCourses={complianceCourses}
             onStartComplianceQuiz={openComplianceQuiz}
@@ -915,7 +1139,7 @@ export function App() {
             DIMENSION 2 SUB-VIEW: PROJECT DIRECTORIES FOLDER EXPLORER
             (Project-Specific SOPs, Playbooks, Update Trackers, Question Banks, Knowledge Docs)
            ===================================================================== */}
-        {activeTab === 'project_directories' && (
+        {currentTab === 'project_directories' && (
           <ProjectDirectoriesFolderExplorer
             projects={projects}
             selectedProjectId={focusedProjectId}
@@ -933,7 +1157,7 @@ export function App() {
         {/* =====================================================================
             DIMENSION 3: NHT TRAINING (BATCHES, PROGRESS, DASHBOARDS, MODULES & REPORTS)
            ===================================================================== */}
-        {activeTab === 'nht_training' && (
+        {currentTab === 'nht_training' && (
           <NhtTrainingDimensionHub
             nhtBatches={nhtBatches}
             setNhtBatches={setNhtBatches}
@@ -962,7 +1186,7 @@ export function App() {
         {/* =====================================================================
             DIMENSION 5 (EXTRA): LEARNING HUB & GAMES ARENA
            ===================================================================== */}
-        {activeTab === 'games_hub' && (
+        {currentTab === 'games_hub' && (
           <LearningHubAndGamesArena
             associates={associates}
             setAssociates={setAssociates}
@@ -976,7 +1200,7 @@ export function App() {
         {/* =====================================================================
             DIMENSION 4: AR CLIENT-SPECIFIC (CS) TRAINING & QUALITY CERTIFICATION PROCESS (QCP) HUB
            ===================================================================== */}
-        {activeTab === 'cs_training' && (
+        {currentTab === 'cs_training' && (
           <ClientSpecificTrainingHub
             projects={projects}
             associates={associates}
@@ -991,7 +1215,7 @@ export function App() {
         {/* =====================================================================
             TAB: CONTINUOUS LEARNING PROCESS DASHBOARD (PROJECT DBT/BQT/PIP STATS & TRENDS + UPDATE TRACKER AUTO-SYNC TO KNOWLEDGE & PKT QUESTION BANK)
            ===================================================================== */}
-        {activeTab === 'clp_dashboard' && (
+        {currentTab === 'clp_dashboard' && (
           <ContinuousLearningDashboard
             projects={projects}
             associates={associates}
@@ -1009,7 +1233,7 @@ export function App() {
         {/* =====================================================================
             TAB: TRAINING MODULES PAGE (NHT - BILLING, NHT - AR, NHT - CODING, AR - CS TRAINING, REFRESHER TRAINING MODULE)
            ===================================================================== */}
-        {activeTab === 'training_modules' && (
+        {currentTab === 'training_modules' && (
           <TrainingModulesCatalogPage
             projects={projects}
             associates={associates}
@@ -1024,7 +1248,7 @@ export function App() {
         {/* =====================================================================
             TAB: TRAINER WORKBENCH (ASSIGNED PROJECTS ONLY, CLOSE AUTO-TRIGGERED TRAININGS WITH SUMMARY, WEEKLY 4 EXAMS & QUESTION BANK)
            ===================================================================== */}
-        {activeTab === 'trainer_hub' && (
+        {currentTab === 'trainer_hub' && (
           <TrainerWorkbench
             projects={projects}
             associates={associates}
@@ -1042,7 +1266,7 @@ export function App() {
         {/* =====================================================================
             TAB: DEDICATED REPORTS CENTER (BY CS TRAINING & QCP, COURSES, USER GROUPS, PROJECTS, TRAININGS & BATCHES)
            ===================================================================== */}
-        {activeTab === 'reports' && (
+        {currentTab === 'reports' && (
           <ReportsCenter
             projects={projects}
             associates={associates}
@@ -1061,7 +1285,7 @@ export function App() {
         {/* =====================================================================
             TAB: ASSOCIATE WORKSPACE (PERFORMANCE TRENDS, SCORECARD, ERROR TRENDS, REBUTTALS & PROJECT KNOWLEDGE LIBRARY)
            ===================================================================== */}
-        {activeTab === 'associate_portal' && (
+        {currentTab === 'associate_portal' && (
           <AssociateWorkspace
             associates={associates}
             defects={defects}
@@ -1080,7 +1304,7 @@ export function App() {
         {/* =====================================================================
             TAB: L&D ADMIN GOVERNANCE STUDIO (PROJECTS, USERS, COURSES, GROUPS)
            ===================================================================== */}
-        {activeTab === 'admin_studio' && (
+        {currentTab === 'admin_studio' && (
           <AdminGovernanceStudio
             key={`${adminSubTab}-${focusedProjectId}-${focusedUserId}`}
             projects={projects}
@@ -1106,7 +1330,7 @@ export function App() {
         {/* =====================================================================
             TAB 1: EXECUTIVE GOVERNANCE & PROJECT HEALTH DASHBOARD
            ===================================================================== */}
-        {activeTab === 'dashboard' && (
+        {currentTab === 'dashboard' && (
           <div className="space-y-6">
             {/* Top Visual Radial Ring KPI Strip */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
@@ -1188,7 +1412,7 @@ export function App() {
                   <div className="text-xl font-black text-slate-900 tabular-nums">
                     {orgSummary.avgCompliance}%
                   </div>
-                  <div className="text-[11px] text-slate-500 mt-0.5">HIPAA & POSH Active</div>
+                  <div className="text-[11px] text-slate-500 mt-0.5">Organization-wide · HIPAA & POSH</div>
                 </div>
               </div>
 
@@ -1228,7 +1452,7 @@ export function App() {
                     Click any project’s <strong>Project Profile & History</strong> button to inspect 6-month historical performance, SLA targets, and assigned rosters
                   </p>
                 </div>
-                <div className="flex flex-wrap items-center gap-2">
+                {role === 'admin' && <div className="flex flex-wrap items-center gap-2">
                   <button
                     onClick={() => openAdminStudio('projects')}
                     className="px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-xs font-semibold text-white flex items-center gap-1.5"
@@ -1250,7 +1474,7 @@ export function App() {
                     <UsersRound className="w-3.5 h-3.5 text-purple-400" />
                     <span>User Groups ({userGroups.length})</span>
                   </button>
-                </div>
+                </div>}
               </div>
 
               <div className="overflow-x-auto">
@@ -1360,12 +1584,14 @@ export function App() {
                             </span>
                           </td>
                           <td className="py-3.5 px-4 text-right">
-                            <button
-                              onClick={() => openAdminStudio('projects', proj.id)}
-                              className="px-3 py-1.5 rounded-lg bg-indigo-600/20 hover:bg-indigo-600/30 border border-indigo-500/40 text-indigo-300 font-semibold text-[11px]"
-                            >
-                              Profile & History →
-                            </button>
+                            {role === 'admin' && (
+                              <button
+                                onClick={() => openAdminStudio('projects', proj.id)}
+                                className="px-3 py-1.5 rounded-lg bg-indigo-600/20 hover:bg-indigo-600/30 border border-indigo-500/40 text-indigo-300 font-semibold text-[11px]"
+                              >
+                                Profile & History →
+                              </button>
+                            )}
                           </td>
                         </tr>
                       );
@@ -1542,7 +1768,7 @@ export function App() {
         {/* =====================================================================
             TAB 2: DAILY DATA UPLOAD HUB (PRODUCTION, QUALITY & TMS)
            ===================================================================== */}
-        {activeTab === 'upload' && (
+        {currentTab === 'upload' && (
           <div className="space-y-6">
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
               {/* Bulk CSV / Excel Upload Dropzone */}
@@ -1607,39 +1833,27 @@ export function App() {
                   ))}
                 </div>
 
-                {/* Interactive File Dropzone */}
+                {/* Demo-only batch simulation */}
                 <div className="border-2 border-dashed border-slate-700 hover:border-indigo-500/70 rounded-2xl p-8 text-center bg-slate-950/50 transition-colors space-y-4">
                   <div className="w-12 h-12 rounded-2xl bg-indigo-500/15 border border-indigo-500/30 flex items-center justify-center mx-auto">
                     <Upload className="w-6 h-6 text-indigo-400" />
                   </div>
                   <div className="space-y-1">
                     <p className="text-sm font-semibold text-white">
-                      Drop your daily <span className="text-indigo-300">{uploadSource}</span> CSV/XLSX file here
+                      <span className="text-indigo-300">{uploadSource}</span> file import is not enabled
                     </p>
                     <p className="text-xs text-slate-400">
-                      Automatically maps `EmpID`, `ProjectCode`, `Tower`, `Specialty`, `Target`, `Actual`, `DefectCode`, `BillableHrs`, `AHT`
+                      This prototype can simulate a batch with sample data, but it does not read local files or update external systems.
                     </p>
                   </div>
                   <div className="flex flex-wrap items-center justify-center gap-3 pt-2">
-                    <label className="cursor-pointer px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-xs font-semibold text-slate-200 border border-slate-700">
-                      <span>Choose Local CSV File</span>
-                      <input
-                        type="file"
-                        accept=".csv,.xlsx"
-                        className="hidden"
-                        onChange={(e) => {
-                          const file = e.target.files?.[0];
-                          if (file) handleSimulateBatchUpload(file.name);
-                        }}
-                      />
-                    </label>
                     <button
                       type="button"
                       onClick={() => handleSimulateBatchUpload()}
                       className="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-xs font-semibold text-white shadow-lg shadow-indigo-600/25 flex items-center gap-2"
                     >
                       <RefreshCw className="w-3.5 h-3.5" />
-                      <span>Simulate Live Daily Batch Sync</span>
+                      <span>Simulate Demo Batch (No Import)</span>
                     </button>
                   </div>
                 </div>
@@ -1656,7 +1870,7 @@ export function App() {
                     Live Associate Daily Metric & SLA Simulator
                   </h3>
                   <p className="text-xs text-slate-400 mt-0.5">
-                    Update an associate’s daily Production, Quality or TMS numbers to test real-time BQT/PIP & training triggers
+                    Update daily Production, Quality, and TMS metrics. Weekly BQT/PIP streaks and training decisions are not inferred from daily entries.
                   </p>
                 </div>
 
@@ -1744,14 +1958,14 @@ export function App() {
                   </div>
 
                   <div className="p-3 rounded-xl bg-slate-950 border border-slate-800 text-[11px] text-slate-400">
-                    Tip: Setting <strong className="text-slate-200">Quality &lt; 95%</strong> auto-triggers <strong className="text-amber-300">BQT Coaching & Defect Training</strong>; setting <strong className="text-slate-200">Quality &lt; 86%</strong> escalates to <strong className="text-rose-400">PIP Governance</strong>.
+                    This demo updates daily metrics only. Weekly BQT/PIP decisions require a separate weekly review and are not triggered here.
                   </div>
 
                   <button
                     type="submit"
                     className="w-full py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-semibold shadow-md transition-all"
                   >
-                    Sync Daily Metrics & Run SLA Rules
+                    Update Daily Metrics
                   </button>
                 </div>
               </form>
@@ -1764,7 +1978,7 @@ export function App() {
                   Recent Daily Production, Quality & TMS Upload Batches
                 </h3>
                 <span className="text-xs text-slate-400">
-                  Auto-triggers Weekly Defect Training & BQT/PIP flags on ingestion
+                  Historical rows are sample data; demo batches do not import files or run governance actions.
                 </span>
               </div>
               <div className="overflow-x-auto">
@@ -1805,7 +2019,11 @@ export function App() {
                           {b.bqtPipFlagsRaised} Flagged
                         </td>
                         <td className="py-3 px-4">
-                          <span className="px-2 py-0.5 rounded-full text-[11px] bg-emerald-500/15 text-emerald-300 border border-emerald-500/30">
+                          <span className={`px-2 py-0.5 rounded-full text-[11px] border ${
+                            b.status === 'Demo Simulation'
+                              ? 'bg-amber-500/15 text-amber-300 border-amber-500/30'
+                              : 'bg-emerald-500/15 text-emerald-300 border-emerald-500/30'
+                          }`}>
                             {b.status}
                           </span>
                         </td>
@@ -1821,7 +2039,7 @@ export function App() {
         {/* =====================================================================
             TAB 3: MONTHLY SCORECARDS, BQT & PIP GOVERNANCE
            ===================================================================== */}
-        {activeTab === 'scorecards' && (
+        {currentTab === 'scorecards' && (
           <div className="space-y-6">
             {/* Formula & Stage Filter Bar */}
             <div className="bg-slate-900/90 border border-slate-800 rounded-2xl p-4 flex flex-wrap items-center justify-between gap-4">
@@ -1874,12 +2092,14 @@ export function App() {
                   <h2 className="text-sm font-bold text-white">
                     RCM Associate Monthly Scorecards & Consecutive-Week Quality SLA Escalation Roster
                   </h2>
-                  <button
-                    onClick={() => openAdminStudio('users', undefined, selectedAssociate.id)}
-                    className="text-xs text-indigo-300 hover:text-white font-semibold"
-                  >
-                    Open Full 360° User Profile →
-                  </button>
+                  {role === 'admin' && (
+                    <button
+                      onClick={() => openAdminStudio('users', undefined, selectedAssociate.id)}
+                      className="text-xs text-indigo-300 hover:text-white font-semibold"
+                    >
+                      Open Full 360° User Profile →
+                    </button>
+                  )}
                 </div>
 
                 <div className="overflow-x-auto">
@@ -2211,7 +2431,7 @@ export function App() {
         {/* =====================================================================
             TAB 4: QUALITY AUDITS, ERROR REBUTTALS & CALIBRATION ENGINE
            ===================================================================== */}
-        {activeTab === 'quality' && (
+        {currentTab === 'quality' && (
           <div className="space-y-6">
             {/* Header & Log Defect Trigger */}
             <div className="flex flex-wrap items-center justify-between gap-4 bg-slate-900/90 border border-slate-800 rounded-2xl p-5">
@@ -2566,7 +2786,7 @@ export function App() {
         {/* =====================================================================
             TAB 5: CONTINUOUS LEARNING, DEFECT-BASED WEEKLY MODULES & PKT
            ===================================================================== */}
-        {activeTab === 'learning' && (
+        {currentTab === 'learning' && (
           <div className="space-y-6">
             <div className="bg-slate-900/90 border border-slate-800 rounded-2xl p-5 flex flex-wrap items-center justify-between gap-4">
               <div>
@@ -2681,7 +2901,7 @@ export function App() {
         {/* =====================================================================
             TAB 6: ANNUAL MANDATORY COMPLIANCE (HIPAA, POSH, FWA, INFOSEC)
            ===================================================================== */}
-        {activeTab === 'compliance' && (
+        {currentTab === 'compliance' && (
           <div className="space-y-6">
             {/* Statutory Banner */}
             <div className="bg-gradient-to-r from-emerald-950/50 via-slate-900 to-indigo-950/50 border border-emerald-500/30 rounded-2xl p-5 flex flex-wrap items-center justify-between gap-4">
@@ -2835,7 +3055,7 @@ export function App() {
         {/* =====================================================================
             TAB 7: SOPS, PLAYBOOKS, PROCESS UPDATES & TRAINER SAM AI CO-PILOT
            ===================================================================== */}
-        {activeTab === 'knowledge' && (
+        {currentTab === 'knowledge' && (
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
             {/* Left 7 Cols: SOPs, Client Playbooks & Process Update Flashes */}
             <div className="lg:col-span-7 space-y-4">
@@ -2983,7 +3203,7 @@ export function App() {
               </div>
             </div>
 
-            {/* Right 5 Cols: Trainer Sam AI RCM Co-Pilot */}
+            {/* Rule-based Trainer Sam reference assistant */}
             <div className="lg:col-span-5 bg-slate-900/90 border border-indigo-500/40 rounded-2xl flex flex-col h-[700px] overflow-hidden">
               <div className="p-4 border-b border-slate-800 bg-gradient-to-r from-indigo-950/80 to-slate-900 flex items-center justify-between">
                 <div className="flex items-center gap-2.5">
@@ -2991,14 +3211,14 @@ export function App() {
                     <Bot className="w-5 h-5 text-white" />
                   </div>
                   <div>
-                    <h3 className="text-sm font-bold text-white">Trainer Sam AI — RCM Co-Pilot</h3>
+                    <h3 className="text-sm font-bold text-white">Trainer Sam — RCM Reference Assistant (Demo)</h3>
                     <p className="text-[11px] text-indigo-300">
-                      Instant CARC/RARC, Modifier, Playbook & BQT/PIP Guidance
+                      Keyword-matched sample guidance; verify against current client/payer sources
                     </p>
                   </div>
                 </div>
-                <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
-                  HIPAA-Sandboxed
+                <span className="text-[10px] px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/30">
+                  Demo responses
                 </span>
               </div>
 
@@ -3038,7 +3258,7 @@ export function App() {
                     >
                       <div className="flex items-center justify-between gap-4 text-[10px] opacity-75">
                         <span className="font-semibold">
-                          {msg.sender === 'user' ? 'You' : 'Trainer Sam AI'}
+                          {msg.sender === 'user' ? 'You' : 'Trainer Sam'}
                         </span>
                         <span>{msg.timestamp}</span>
                       </div>
@@ -3089,7 +3309,7 @@ export function App() {
                 <button
                   type="submit"
                   className="p-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white"
-                  aria-label="Send AI question"
+                  aria-label="Send question"
                 >
                   <Send className="w-4 h-4" />
                 </button>
