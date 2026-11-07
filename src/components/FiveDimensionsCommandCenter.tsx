@@ -434,6 +434,8 @@ interface VisualDimensionSwitcherProps {
   nhtPassPct: number;
   csCertifiedPct: number;
   activeUserPktPct: number;
+  /** Workspaces shown for the active sample profile (defaults to all). */
+  visibleDimensions?: AppDimensionId[];
 }
 
 export const VisualDimensionSwitcher: React.FC<VisualDimensionSwitcherProps> = ({
@@ -444,8 +446,9 @@ export const VisualDimensionSwitcher: React.FC<VisualDimensionSwitcherProps> = (
   nhtPassPct,
   csCertifiedPct,
   activeUserPktPct,
+  visibleDimensions,
 }) => {
-  const dimensions = [
+  const allDimensions = [
     {
       id: 'dim_org_learning' as AppDimensionId,
       num: '01',
@@ -512,9 +515,12 @@ export const VisualDimensionSwitcher: React.FC<VisualDimensionSwitcherProps> = (
       pills: ['Denial Blitz', 'Modifier Match', 'Claim Detective'],
     },
   ];
+  const dimensions = visibleDimensions
+    ? allDimensions.filter((d) => visibleDimensions.includes(d.id))
+    : allDimensions;
 
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
+    <div className={`grid grid-cols-1 sm:grid-cols-2 gap-3 ${dimensions.length >= 5 ? 'lg:grid-cols-5' : 'lg:grid-cols-4'}`}>
       {dimensions.map((d) => {
         const Icon = d.icon;
         const isActive = activeDimension === d.id;

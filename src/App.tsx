@@ -190,6 +190,7 @@ export function App() {
   };
 
   const profile = profileForPersona(activePersona);
+  const canOpenAdminStudio = isTabAllowed(profile, 'admin_studio');
 
   const handleSelectDimension = (dim: AppDimensionId) => {
     if (!isDimensionAllowed(profile, dim)) {
@@ -769,6 +770,7 @@ export function App() {
               </select>
             </div>
 
+            {isTabAllowed(profile, 'admin_studio') && (
             <button
               onClick={() => openAdminStudio('projects')}
               className="px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 border border-slate-200 text-slate-800 text-xs font-bold flex items-center gap-1.5 transition-all"
@@ -776,6 +778,7 @@ export function App() {
               <FolderKanban className="w-3.5 h-3.5 text-indigo-600" />
               <span>Admin Studio</span>
             </button>
+            )}
 
             <button
               onClick={() => {
@@ -951,6 +954,7 @@ export function App() {
           nhtPassPct={nhtAvgGatePct}
           csCertifiedPct={csCertifiedPct}
           activeUserPktPct={activeUserPktPct}
+          visibleDimensions={PROFILE_DIMENSIONS[profile]}
         />
         )}
 
@@ -1405,6 +1409,7 @@ export function App() {
                   </p>
                 </div>
                 <div className="flex flex-wrap items-center gap-2">
+                  {canOpenAdminStudio && (
                   <button
                     onClick={() => openAdminStudio('projects')}
                     className="px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-xs font-semibold text-white flex items-center gap-1.5"
@@ -1412,6 +1417,8 @@ export function App() {
                     <Plus className="w-3.5 h-3.5" />
                     <span>+ Add Project / View History</span>
                   </button>
+                  )}
+                  {canOpenAdminStudio && (
                   <button
                     onClick={() => openAdminStudio('users')}
                     className="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs font-medium text-slate-200 flex items-center gap-1.5"
@@ -1419,6 +1426,8 @@ export function App() {
                     <UserPlus className="w-3.5 h-3.5 text-sky-400" />
                     <span>+ Add User</span>
                   </button>
+                  )}
+                  {canOpenAdminStudio && (
                   <button
                     onClick={() => openAdminStudio('groups')}
                     className="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs font-medium text-slate-200 flex items-center gap-1.5"
@@ -1426,6 +1435,7 @@ export function App() {
                     <UsersRound className="w-3.5 h-3.5 text-purple-400" />
                     <span>User Groups ({userGroups.length})</span>
                   </button>
+                  )}
                 </div>
               </div>
 
@@ -1536,12 +1546,14 @@ export function App() {
                             </span>
                           </td>
                           <td className="py-3.5 px-4 text-right">
+                            {canOpenAdminStudio && (
                             <button
                               onClick={() => openAdminStudio('projects', proj.id)}
                               className="px-3 py-1.5 rounded-lg bg-indigo-600/20 hover:bg-indigo-600/30 border border-indigo-500/40 text-indigo-300 font-semibold text-[11px]"
                             >
                               Profile & History →
                             </button>
+                            )}
                           </td>
                         </tr>
                       );
@@ -2050,12 +2062,14 @@ export function App() {
                   <h2 className="text-sm font-bold text-white">
                     RCM Associate Monthly Scorecards & Consecutive-Week Quality SLA Escalation Roster
                   </h2>
+                  {canOpenAdminStudio && (
                   <button
                     onClick={() => openAdminStudio('users', undefined, selectedAssociate.id)}
                     className="text-xs text-indigo-300 hover:text-white font-semibold"
                   >
                     Open Full 360° User Profile →
                   </button>
+                  )}
                 </div>
 
                 <div className="overflow-x-auto">
@@ -2755,6 +2769,7 @@ export function App() {
                 </p>
               </div>
               <div className="flex flex-wrap items-center gap-2">
+                {canOpenAdminStudio && (
                 <button
                   onClick={() => openAdminStudio('courses')}
                   className="px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-xs font-semibold text-white flex items-center gap-1.5"
@@ -2762,6 +2777,7 @@ export function App() {
                   <Plus className="w-4 h-4" />
                   <span>+ Create New Course</span>
                 </button>
+                )}
                 <button
                   onClick={() =>
                     triggerToast(
