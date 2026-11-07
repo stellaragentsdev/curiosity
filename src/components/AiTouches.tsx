@@ -104,7 +104,7 @@ export function CoachingReviewTray({ tickets, associates, learningModules, onOpe
       <label className="mt-3 block text-xs text-clarity-muted">
         Ticket{' '}
         <select value={ticket.id} onChange={(e) => { setTicketId(e.target.value); reset(); }}
-          className="ml-1 rounded-md border border-clarity-line bg-white px-2 py-1 text-xs text-clarity-ink">
+          className="ml-1 max-w-full rounded-md border border-clarity-line bg-white px-2 py-1 text-xs text-clarity-ink">
           {open.map((t) => <option key={t.id} value={t.id}>{t.associateName} · {t.id}</option>)}
         </select>
       </label>

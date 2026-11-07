@@ -89,3 +89,15 @@ describe('scripted AI suggestions are deterministic and data-derived', () => {
     expect(r.recommendations.length).toBeGreaterThan(0);
   });
 });
+
+import css from '../index.css?raw';
+
+describe('motion safety CSS', () => {
+  it('shows reveal content fully when motion is paused', () => {
+    expect(css).toMatch(/html\.motion-paused \.ai-reveal \{[^}]*animation: none !important;[^}]*opacity: 1 !important;/);
+  });
+  it('shows reveal content fully under prefers-reduced-motion', () => {
+    const rm = css.slice(css.indexOf('@media (prefers-reduced-motion: reduce)'));
+    expect(rm).toMatch(/\.ai-reveal \{ opacity: 1 !important; transform: none !important; \}/);
+  });
+});

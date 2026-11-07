@@ -287,10 +287,22 @@ dialog::backdrop {
 .tilt-card.is-selected { border-color: #096b61; }
 .tilt-layer { transform: translateZ(18px); }
 html.motion-paused *, html.motion-paused *::before, html.motion-paused *::after { animation-play-state: paused !important; transition: none !important; }
+/* Entry/reveal animations carry content; never freeze them mid-way. Show final state instead. */
+html.motion-paused .ai-reveal { animation: none !important; opacity: 1 !important; transform: none !important; }
 html.motion-paused .tilt-card { transform: none; }
 @media (prefers-reduced-motion: reduce) {
   .ai-orb, .ai-orb-ring, .ai-reveal, .constellation circle { animation: none !important; }
+  .ai-reveal { opacity: 1 !important; transform: none !important; }
   .ai-step, .tilt-card { transition: none !important; }
   .ai-step.is-active, .tilt-card { transform: none !important; }
 }
 @media (max-width: 767px) { .ai-step.is-active { transform: none; } }
+
+/* ===== Narrow-screen safety (360–390 px) ===== */
+select { max-width: 100%; }
+@media (max-width: 480px) {
+  header select { max-width: 9.5rem; text-overflow: ellipsis; }
+  .clarity-card { padding: 16px; }
+  .clarity-number { font-size: 26px; }
+}
+.clarity-card, .ai-step, .tilt-card { min-width: 0; overflow-wrap: anywhere; }
