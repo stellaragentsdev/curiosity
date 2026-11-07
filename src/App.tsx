@@ -78,6 +78,7 @@ import {
 } from './data/mockRcmData';
 import {
   AiChatMessage,
+  DEMO_ADVICE_DISCLAIMER,
   generateTrainerSamResponse,
   QUICK_AI_PROMPTS,
 } from './utils/rcmAiAssistant';
@@ -2991,10 +2992,11 @@ export function App() {
                     <Bot className="w-5 h-5 text-white" />
                   </div>
                   <div>
-                    <h3 className="text-sm font-bold text-white">Trainer Sam AI — RCM Co-Pilot</h3>
+                    <h3 className="text-sm font-bold text-white">Trainer Sam AI — RCM Co-Pilot (Demo)</h3>
                     <p className="text-[11px] text-indigo-300">
                       Instant CARC/RARC, Modifier, Playbook & BQT/PIP Guidance
                     </p>
+                    <p className="text-[10px] text-amber-300" role="note">{DEMO_ADVICE_DISCLAIMER}</p>
                   </div>
                 </div>
                 <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
