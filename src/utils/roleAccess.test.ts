@@ -56,3 +56,36 @@ describe('branding', () => {
     expect(html).not.toContain('RCM Learning & Performance Intelligence');
   });
 });
+
+import { resolveView } from './roleAccess';
+import { buildAssociatePlan, buildCoachingReview } from './aiSuggestions';
+import { INITIAL_ASSOCIATES, INITIAL_AUTO_TRIGGERED_TICKETS, INITIAL_LEARNING_MODULES } from '../data/mockRcmData';
+
+describe('resolveView (synchronous profile switch)', () => {
+  it('drops Admin Studio immediately when switching admin → associate/trainer', () => {
+    expect(resolveView('associate', 'admin_studio', 'dim_process_intell')).toEqual({ tab: 'overview', dimension: 'dim_process_intell' });
+    expect(resolveView('trainer', 'admin_studio', 'dim_process_intell').tab).toBe('overview');
+  });
+  it('drops NHT immediately when switching to associate', () => {
+    expect(resolveView('associate', 'nht_training', 'dim_nht_training')).toEqual({ tab: 'overview', dimension: 'dim_process_intell' });
+  });
+  it('keeps allowed views unchanged', () => {
+    expect(resolveView('trainer', 'nht_training', 'dim_nht_training')).toEqual({ tab: 'nht_training', dimension: 'dim_nht_training' });
+    expect(resolveView('admin', 'admin_studio', 'dim_process_intell').tab).toBe('admin_studio');
+  });
+});
+
+describe('scripted AI suggestions are deterministic and data-derived', () => {
+  it('associate plan uses assigned modules', () => {
+    const a = INITIAL_ASSOCIATES[0];
+    const p1 = buildAssociatePlan(a, INITIAL_LEARNING_MODULES);
+    expect(p1).toEqual(buildAssociatePlan(a, INITIAL_LEARNING_MODULES));
+    expect(p1.steps.length).toBeGreaterThan(1);
+  });
+  it('coaching review references the ticket associate', () => {
+    const t = INITIAL_AUTO_TRIGGERED_TICKETS[0];
+    const r = buildCoachingReview(t, INITIAL_ASSOCIATES, INITIAL_LEARNING_MODULES);
+    expect(r.analysis).toContain(t.associateName);
+    expect(r.recommendations.length).toBeGreaterThan(0);
+  });
+});

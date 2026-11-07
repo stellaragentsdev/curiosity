@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { ArrowUpRight } from 'lucide-react';
 import {
   AssociateProfile,
@@ -11,6 +11,7 @@ import {
   SopPlaybookItem,
 } from '../types/rcm';
 import type { NhtBatchRecord } from './FiveDimensionsCommandCenter';
+import { CoachingReviewTray, TiltModuleCard } from './AiTouches';
 
 export type RoleDestination =
   | 'trainer_hub'
@@ -64,7 +65,8 @@ const Footnote = () => (
   </p>
 );
 
-export function TrainerOverview({ tickets, associates, defects, calibrations, nhtBatches, onNavigate }: {
+export function TrainerOverview({ tickets, associates, defects, calibrations, nhtBatches, learningModules, onNavigate }: {
+  learningModules: ContinuousLearningModule[];
   tickets: AutoTriggeredTrainingTicket[];
   associates: AssociateProfile[];
   defects: AuditDefectRecord[];
@@ -87,6 +89,8 @@ export function TrainerOverview({ tickets, associates, defects, calibrations, nh
         <Stat label="Pending rebuttals" value={pendingRebuttals} caption="Quality audit rebuttals to review" />
         <Stat label="Calibrations not completed" value={upcomingCalibrations} caption={`${calibrations.length} sessions in total`} />
       </div>
+      <CoachingReviewTray tickets={tickets} associates={associates} learningModules={learningModules}
+        onOpenTrainerHub={() => onNavigate('trainer_hub')} onOpenScorecards={() => onNavigate('scorecards')} />
       <div className="grid gap-4 lg:grid-cols-[1.45fr_1fr]">
         <article className="clarity-card overflow-x-auto">
           <div className="flex items-center justify-between gap-3">
@@ -156,6 +160,9 @@ export function AdminOverview({ projects, learningModules, complianceCourses, so
   summary: { avgHealth: string; avgQual: string; avgCompliance: string; totalBqt: number; totalPip: number; pendingRebuttals: number };
   onNavigate: (d: RoleDestination) => void;
 }) {
+  const [selectedModuleId, setSelectedModuleId] = useState<string | null>(null);
+  const featured = learningModules.slice(0, 3);
+  const selectedModule = featured.find((m) => m.id === selectedModuleId);
   return (
     <section aria-labelledby="admin-overview-title" className="space-y-6" data-profile="admin">
       <Heading id="admin-overview-title" eyebrow="Organisation overview" title="Govern learning across every project."
@@ -167,6 +174,27 @@ export function AdminOverview({ projects, learningModules, complianceCourses, so
         <Stat label="Org compliance" value={<>{summary.avgCompliance}<span className="text-base">%</span></>} caption={`${complianceCourses.length} mandatory courses`} />
         <Stat label="BQT / PIP" value={`${summary.totalBqt} / ${summary.totalPip}`} caption={`${summary.pendingRebuttals} rebuttals pending`} />
       </div>
+      <article className="clarity-card tilt-stage" aria-labelledby="featured-modules-title">
+        <svg className="constellation" viewBox="0 0 600 160" preserveAspectRatio="none" aria-hidden="true">
+          <line x1="40" y1="30" x2="200" y2="80" /><line x1="200" y1="80" x2="380" y2="40" /><line x1="380" y1="40" x2="560" y2="110" />
+          <circle cx="40" cy="30" r="3" /><circle cx="200" cy="80" r="3" /><circle cx="380" cy="40" r="3" /><circle cx="560" cy="110" r="3" />
+        </svg>
+        <div className="relative flex flex-wrap items-center justify-between gap-2">
+          <h2 id="featured-modules-title" className="text-base font-bold text-clarity-ink">Featured learning modules</h2>
+          <LinkPill label="Full catalogue" onClick={() => onNavigate('training_modules')} />
+        </div>
+        <div className="relative mt-4 grid gap-4 md:grid-cols-3 tilt-grid">
+          {featured.map((m) => (
+            <TiltModuleCard key={m.id} module={m} selected={m.id === selectedModuleId}
+              onSelect={() => setSelectedModuleId((cur) => (cur === m.id ? null : m.id))} />
+          ))}
+        </div>
+        <div className="relative mt-4 rounded-lg bg-clarity-50 p-3 text-xs text-clarity-ink" aria-live="polite">
+          {selectedModule
+            ? `${selectedModule.id} · ${selectedModule.title}: ${selectedModule.assignedAssociatesCount} assigned, ${selectedModule.completionRatePct}% completion, pass mark ${selectedModule.passMarksPct}% (sample data). Trigger: ${selectedModule.triggerCondition}`
+            : 'Select a module card to inspect it (sample data).'}
+        </div>
+      </article>
       <div className="grid gap-4 lg:grid-cols-[1.45fr_1fr]">
         <article className="clarity-card overflow-x-auto">
           <div className="flex items-center justify-between gap-3">

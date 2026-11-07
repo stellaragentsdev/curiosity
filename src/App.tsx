@@ -92,6 +92,7 @@ import {
   isDimensionAllowed,
   isTabAllowed,
   profileForPersona,
+  resolveView,
 } from './utils/roleAccess';
 import { AdminGovernanceStudio } from './components/AdminGovernanceStudio';
 import { AssociateWorkspace } from './components/AssociateWorkspace';
@@ -147,10 +148,16 @@ type ActiveTab =
 
 export function App() {
   // Global 5-Dimension & Role State
-  const [activeDimension, setActiveDimension] = useState<AppDimensionId>('dim_process_intell');
+  const [requestedDimension, setActiveDimension] = useState<AppDimensionId>('dim_process_intell');
   const [activePersona, setActivePersona] = useState<EnterprisePersona>('admin');
   const [role, setRole] = useState<UserRole>('admin');
-  const [activeTab, setActiveTab] = useState<ActiveTab>('overview');
+  const [requestedTab, setActiveTab] = useState<ActiveTab>('overview');
+  const [motionPaused, setMotionPaused] = useState(false);
+  // Derived synchronously during render so a profile switch can never show a
+  // stale, disallowed tab or workspace (even for a single frame).
+  const profile = profileForPersona(activePersona);
+  const { tab: resolvedTab, dimension: activeDimension } = resolveView(profile, requestedTab, requestedDimension);
+  const activeTab = resolvedTab as ActiveTab;
   const [adminSubTab, setAdminSubTab] = useState<'projects' | 'users' | 'courses' | 'groups'>('projects');
   const [focusedProjectId, setFocusedProjectId] = useState<string>('PRJ-CARD-01');
   const [focusedGroupId, setFocusedGroupId] = useState<string>('GRP-ORTHO-AR');
@@ -189,7 +196,6 @@ export function App() {
     }, 4500);
   };
 
-  const profile = profileForPersona(activePersona);
   const canOpenAdminStudio = isTabAllowed(profile, 'admin_studio');
 
   const handleSelectDimension = (dim: AppDimensionId) => {
@@ -781,6 +787,19 @@ export function App() {
             )}
 
             <button
+              type="button"
+              aria-pressed={motionPaused}
+              onClick={() => {
+                const next = !motionPaused;
+                document.documentElement.classList.toggle('motion-paused', next);
+                setMotionPaused(next);
+              }}
+              className="px-3 py-1.5 rounded-xl bg-white hover:bg-slate-100 border border-slate-200 text-slate-800 text-xs font-bold"
+            >
+              {motionPaused ? 'Resume motion' : 'Pause motion'}
+            </button>
+
+            <button
               onClick={() => {
                 setActiveDimension('dim_process_intell');
                 setActiveTab('knowledge');
@@ -923,7 +942,7 @@ export function App() {
           if (profile === 'trainer') {
             return (
               <TrainerOverview tickets={tickets} associates={associates} defects={defects}
-                calibrations={calibrations} nhtBatches={nhtBatches} onNavigate={handleOverviewNavigate} />
+                calibrations={calibrations} nhtBatches={nhtBatches} learningModules={learningModules} onNavigate={handleOverviewNavigate} />
             );
           }
           if (profile === 'admin') {

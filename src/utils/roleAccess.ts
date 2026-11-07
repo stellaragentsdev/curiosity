@@ -70,3 +70,18 @@ export function defaultTabForDimension(profile: ProfileKind, dim: AppDimensionId
   if (dim === 'dim_process_intell') return PROFILE_PROCESS_TABS[profile][0];
   return Object.keys(DIMENSION_TABS).find((t) => DIMENSION_TABS[t] === dim) ?? 'overview';
 }
+
+/**
+ * Resolve the tab/workspace actually rendered for a profile. Pure and
+ * synchronous: any disallowed request falls back to the profile overview.
+ */
+export function resolveView(
+  profile: ProfileKind,
+  tab: string,
+  dimension: AppDimensionId
+): { tab: string; dimension: AppDimensionId } {
+  const dimOk = isDimensionAllowed(profile, dimension);
+  const tabOk = isTabAllowed(profile, tab);
+  if (dimOk && tabOk) return { tab, dimension };
+  return { tab: 'overview', dimension: dimOk ? dimension : 'dim_process_intell' };
+}
