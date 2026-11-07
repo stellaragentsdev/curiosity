@@ -1,0 +1,182 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    color-scheme: light;
+    scrollbar-color: #cbd5e1 #f8fafc;
+    scrollbar-width: thin;
+  }
+
+  body {
+    font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+    background-color: #f8fafc;
+    color: #0f172a;
+  }
+}
+
+.tabular-nums {
+  font-variant-numeric: tabular-nums;
+}
+
+dialog::backdrop {
+  background: rgba(15, 23, 42, 0.45);
+  backdrop-filter: blur(6px);
+}
+
+/* ============================================================================
+   CURIOSITY PROFESSIONAL LIGHT LEARNING THEME HARMONIZER
+   Converts any nested dark-slate utility classes inside deep sub-modules into
+   clean, elevated daylight learning surfaces (#FFFFFF / #F8FAFC)
+   ============================================================================ */
+.curiosity-light-surface .bg-slate-950,
+.curiosity-light-surface .bg-slate-950\/95,
+.curiosity-light-surface .bg-slate-950\/90,
+.curiosity-light-surface .bg-slate-950\/80,
+.curiosity-light-surface .bg-slate-950\/70,
+.curiosity-light-surface .bg-slate-950\/60,
+.curiosity-light-surface .bg-slate-950\/50,
+.curiosity-light-surface .bg-slate-950\/40 {
+  background-color: #f8fafc !important;
+}
+
+.curiosity-light-surface .bg-slate-900,
+.curiosity-light-surface .bg-slate-900\/95,
+.curiosity-light-surface .bg-slate-900\/90,
+.curiosity-light-surface .bg-slate-900\/80,
+.curiosity-light-surface .bg-slate-900\/70,
+.curiosity-light-surface .bg-slate-900\/60,
+.curiosity-light-surface .bg-slate-900\/50,
+.curiosity-light-surface .bg-slate-900\/40 {
+  background-color: #ffffff !important;
+  box-shadow: 0 1px 3px 0 rgba(15, 23, 42, 0.05), 0 1px 2px -1px rgba(15, 23, 42, 0.04);
+}
+
+.curiosity-light-surface .bg-slate-800,
+.curiosity-light-surface .bg-slate-800\/80,
+.curiosity-light-surface .bg-slate-800\/60,
+.curiosity-light-surface .bg-slate-800\/50,
+.curiosity-light-surface .bg-slate-800\/40,
+.curiosity-light-surface .bg-slate-800\/30 {
+  background-color: #f1f5f9 !important;
+}
+
+.curiosity-light-surface .from-slate-900,
+.curiosity-light-surface .from-indigo-950\/90,
+.curiosity-light-surface .from-indigo-950\/80,
+.curiosity-light-surface .from-indigo-950\/70,
+.curiosity-light-surface .from-amber-950\/80,
+.curiosity-light-surface .from-purple-950\/90,
+.curiosity-light-surface .from-cyan-950\/60,
+.curiosity-light-surface .from-emerald-950\/60 {
+  --tw-gradient-from: #eef2ff !important;
+  --tw-gradient-to: #f8fafc !important;
+  --tw-gradient-stops: var(--tw-gradient-from), #ffffff, var(--tw-gradient-to) !important;
+}
+
+.curiosity-light-surface .border-slate-800,
+.curiosity-light-surface .border-slate-800\/90,
+.curiosity-light-surface .border-slate-800\/80,
+.curiosity-light-surface .border-slate-800\/70,
+.curiosity-light-surface .border-slate-800\/60,
+.curiosity-light-surface .border-slate-800\/50,
+.curiosity-light-surface .border-slate-700,
+.curiosity-light-surface .border-slate-700\/80 {
+  border-color: #e2e8f0 !important;
+}
+
+.curiosity-light-surface .divide-slate-800 > :not([hidden]) ~ :not([hidden]),
+.curiosity-light-surface .divide-slate-800\/80 > :not([hidden]) ~ :not([hidden]),
+.curiosity-light-surface .divide-slate-800\/60 > :not([hidden]) ~ :not([hidden]) {
+  border-color: #e2e8f0 !important;
+}
+
+.curiosity-light-surface .text-white:not(
+  .bg-indigo-600 *,
+  .bg-indigo-600,
+  .bg-emerald-600 *,
+  .bg-emerald-600,
+  .bg-cyan-600 *,
+  .bg-cyan-600,
+  .bg-sky-600 *,
+  .bg-sky-600,
+  .bg-purple-600 *,
+  .bg-purple-600,
+  .bg-rose-600 *,
+  .bg-rose-600,
+  .bg-amber-600 *,
+  .bg-amber-600,
+  .bg-slate-900.keep-dark *,
+  .bg-slate-900.keep-dark,
+  .keep-white-text,
+  .keep-white-text *
+) {
+  color: #0f172a !important;
+}
+
+.curiosity-light-surface .text-slate-100,
+.curiosity-light-surface .text-slate-200 {
+  color: #1e293b !important;
+}
+
+.curiosity-light-surface .text-slate-300 {
+  color: #334155 !important;
+}
+
+.curiosity-light-surface .text-slate-400,
+.curiosity-light-surface .text-slate-500 {
+  color: #64748b !important;
+}
+
+.curiosity-light-surface .text-indigo-300,
+.curiosity-light-surface .text-indigo-200 {
+  color: #4338ca !important;
+}
+
+.curiosity-light-surface .text-indigo-400 {
+  color: #4f46e5 !important;
+}
+
+.curiosity-light-surface .text-emerald-300,
+.curiosity-light-surface .text-emerald-200 {
+  color: #047857 !important;
+}
+
+.curiosity-light-surface .text-emerald-400 {
+  color: #059669 !important;
+}
+
+.curiosity-light-surface .text-amber-300,
+.curiosity-light-surface .text-amber-200 {
+  color: #b45309 !important;
+}
+
+.curiosity-light-surface .text-amber-400 {
+  color: #d97706 !important;
+}
+
+.curiosity-light-surface .text-sky-300,
+.curiosity-light-surface .text-sky-400,
+.curiosity-light-surface .text-cyan-300,
+.curiosity-light-surface .text-cyan-400 {
+  color: #0284c7 !important;
+}
+
+.curiosity-light-surface .text-purple-300,
+.curiosity-light-surface .text-purple-400 {
+  color: #7e22ce !important;
+}
+
+.curiosity-light-surface .text-rose-300,
+.curiosity-light-surface .text-rose-400 {
+  color: #e11d48 !important;
+}
+
+.curiosity-light-surface input,
+.curiosity-light-surface select,
+.curiosity-light-surface textarea {
+  background-color: #ffffff !important;
+  color: #0f172a !important;
+  border-color: #cbd5e1 !important;
+}
