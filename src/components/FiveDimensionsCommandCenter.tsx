@@ -1,5 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { BRAND_FULL_TITLE, BRAND_TAGLINE } from '../config/brand';
+import roverLogoUrl from '../assets/rover-logo.png';
 import {
   Activity,
   Award,
@@ -321,31 +322,9 @@ export const CuriosityBrandLogo: React.FC<{ onClick?: () => void }> = ({ onClick
     title={BRAND_FULL_TITLE}
     className="flex items-center gap-3 cursor-pointer group select-none"
   >
-    <div className="relative w-11 h-11 rounded-2xl bg-gradient-to-br from-indigo-600 via-teal-500 to-amber-500 p-0.5 shadow-md shadow-indigo-500/20 group-hover:scale-105 transition-transform">
-      <div className="w-full h-full rounded-[14px] bg-white flex items-center justify-center relative overflow-hidden">
-        <svg viewBox="0 0 40 40" className="w-8 h-8">
-          <defs>
-            <linearGradient id="curiosityGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-              <stop offset="0%" stopColor="#4F46E5" />
-              <stop offset="55%" stopColor="#0D9488" />
-              <stop offset="100%" stopColor="#F59E0B" />
-            </linearGradient>
-          </defs>
-          {/* Open Learning Book Base */}
-          <path
-            d="M8 27C12 24.5 16.5 24.5 20 27C23.5 24.5 28 24.5 32 27V15C28 12.5 23.5 12.5 20 15C16.5 12.5 12 12.5 8 15V27Z"
-            fill="url(#curiosityGrad)"
-            opacity="0.18"
-          />
-          {/* Curiosity Compass Spark */}
-          <path
-            d="M20 5L23.2 14.2L32.5 17.5L23.2 20.8L20 30L16.8 20.8L7.5 17.5L16.8 14.2L20 5Z"
-            fill="url(#curiosityGrad)"
-          />
-          <circle cx="20" cy="17.5" r="3.2" fill="#FFFFFF" />
-          <circle cx="30" cy="9" r="2" fill="#F59E0B" />
-        </svg>
-      </div>
+    <div className="w-11 h-11 rounded-2xl bg-clarity-50 border border-clarity-200 flex items-center justify-center shadow-sm group-hover:scale-105 transition-transform">
+      {/* Original stylised rover mascot (not an official NASA mark); decorative next to the wordmark. */}
+      <img src={roverLogoUrl} alt="" aria-hidden="true" width={40} height={40} className="w-10 h-10 object-contain" />
     </div>
     <div>
       <div className="flex items-center gap-2">
