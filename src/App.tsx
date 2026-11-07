@@ -81,6 +81,7 @@ import {
   generateTrainerSamResponse,
   QUICK_AI_PROMPTS,
 } from './utils/rcmAiAssistant';
+import { ClarityOverview, OverviewDestination } from './components/ClarityOverview';
 import { AdminGovernanceStudio } from './components/AdminGovernanceStudio';
 import { AssociateWorkspace } from './components/AssociateWorkspace';
 import { TrainerWorkbench, ReportsCenter } from './components/TrainerAndReportsHub';
@@ -113,6 +114,7 @@ import {
 } from './components/FiveDimensionsCommandCenter';
 
 type ActiveTab =
+  | 'overview'
   | 'org_learning'
   | 'dashboard'
   | 'project_directories'
@@ -137,7 +139,7 @@ export function App() {
   const [activeDimension, setActiveDimension] = useState<AppDimensionId>('dim_process_intell');
   const [activePersona, setActivePersona] = useState<EnterprisePersona>('admin');
   const [role, setRole] = useState<UserRole>('admin');
-  const [activeTab, setActiveTab] = useState<ActiveTab>('dashboard');
+  const [activeTab, setActiveTab] = useState<ActiveTab>('overview');
   const [adminSubTab, setAdminSubTab] = useState<'projects' | 'users' | 'courses' | 'groups'>('projects');
   const [focusedProjectId, setFocusedProjectId] = useState<string>('PRJ-CARD-01');
   const [focusedGroupId, setFocusedGroupId] = useState<string>('GRP-ORTHO-AR');
@@ -189,6 +191,12 @@ export function App() {
     } else if (dim === 'dim_games_hub') {
       setActiveTab('games_hub');
     }
+  };
+
+  const openOverview = () => setActiveTab('overview');
+  const handleOverviewNavigate = (destination: OverviewDestination) => {
+    setActiveDimension('dim_process_intell');
+    setActiveTab(destination);
   };
 
   const handleSelectPersona = (persona: EnterprisePersona) => {
@@ -766,8 +774,124 @@ export function App() {
       </header>
 
       {/* Main Content Area */}
-      <main className="flex-1 max-w-[1440px] w-full mx-auto px-4 sm:px-6 py-5 space-y-5">
-        {/* OBVIOUSLY VISIBLE 5-DIMENSION VISUAL SWITCHER DECK */}
+      <div className="flex-1 w-full max-w-[1600px] mx-auto flex">
+      {/* Clarity sidebar: persistent workspace navigation on large screens.
+          Mobile/tablet keep the existing dimension switcher deck below. */}
+      <aside aria-label="Primary" className="clarity-sidebar hidden lg:flex flex-col gap-6 w-60 shrink-0 bg-white border-r border-slate-200 px-4 py-6 sticky top-[65px] self-start h-[calc(100vh-65px)] overflow-y-auto">
+        <nav aria-label="Workspace dimensions">
+          <div className="text-[10px] font-bold tracking-[0.14em] uppercase text-slate-500 px-2 mb-2">Workspace</div>
+          <ul className="space-y-1">
+            <li>
+              <button
+                type="button"
+                onClick={openOverview}
+                aria-current={activeTab === 'overview' ? 'page' : undefined}
+                className={`clarity-nav-item w-full flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-xs text-left transition-colors ${
+                  activeTab === 'overview' ? 'is-active font-bold' : 'font-medium'
+                }`}
+              >
+                <LayoutDashboard className="w-4 h-4 shrink-0" aria-hidden="true" />
+                <span>My overview</span>
+              </button>
+            </li>
+            {([
+              ['dim_org_learning', 'Organizational Learning', GraduationCap],
+              ['dim_process_intell', 'Process Training Intell', Target],
+              ['dim_nht_training', 'NHT Training', UserPlus],
+              ['dim_cs_training', 'CS Trainings', Building2],
+              ['dim_games_hub', 'Learning Hub & Games', Gamepad2],
+            ] as [AppDimensionId, string, typeof Target][]).map(([id, label, Icon]) => {
+              const isActive = activeTab !== 'overview' && activeDimension === id;
+              return (
+                <li key={id}>
+                  <button
+                    type="button"
+                    onClick={() => handleSelectDimension(id)}
+                    aria-current={isActive ? 'page' : undefined}
+                    className={`clarity-nav-item w-full flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-xs text-left transition-colors ${
+                      isActive ? 'is-active font-bold' : 'font-medium'
+                    }`}
+                  >
+                    <Icon className="w-4 h-4 shrink-0" aria-hidden="true" />
+                    <span>{label}</span>
+                  </button>
+                </li>
+              );
+            })}
+          </ul>
+        </nav>
+        <p className="mt-auto text-[11px] leading-relaxed text-slate-500 px-2">
+          Sample data only. Role views are a UI preview, not access control.
+        </p>
+      </aside>
+      <main id="main-content" className="flex-1 min-w-0 w-full px-4 sm:px-6 lg:px-8 py-5 lg:py-7 space-y-5">
+        {/* Mobile / tablet workspace navigation (sidebar equivalent) */}
+        <nav aria-label="Workspace sections" className="lg:hidden -mx-4 sm:-mx-6 px-4 sm:px-6 overflow-x-auto">
+          <ul className="flex gap-2 min-w-max pb-1">
+            {([
+              ['overview', 'My overview'],
+              ['dim_org_learning', 'Organizational Learning'],
+              ['dim_process_intell', 'Process Training'],
+              ['dim_nht_training', 'NHT Training'],
+              ['dim_cs_training', 'CS Trainings'],
+              ['dim_games_hub', 'Learning Hub & Games'],
+            ] as [AppDimensionId | 'overview', string][]).map(([id, label]) => {
+              const isActive = id === 'overview' ? activeTab === 'overview' : activeTab !== 'overview' && activeDimension === id;
+              return (
+                <li key={id}>
+                  <button
+                    type="button"
+                    onClick={() => (id === 'overview' ? openOverview() : handleSelectDimension(id))}
+                    aria-current={isActive ? 'page' : undefined}
+                    className={`clarity-nav-item whitespace-nowrap px-3 py-2 rounded-lg text-xs border border-slate-200 bg-white ${isActive ? 'is-active font-bold' : 'font-medium'}`}
+                  >
+                    {label}
+                  </button>
+                </li>
+              );
+            })}
+          </ul>
+        </nav>
+
+        {/* Clarity topline: breadcrumb + active role lens */}
+        <div className="flex items-center justify-between gap-3 text-xs text-clarity-muted">
+          <p>
+            Workspace /{' '}
+            <span className="text-clarity-ink font-medium">
+              {activeTab === 'overview'
+                ? 'My overview'
+                : {
+                    dim_org_learning: 'Organizational Learning',
+                    dim_process_intell: 'Process Training Intell',
+                    dim_nht_training: 'NHT Training',
+                    dim_cs_training: 'CS Trainings',
+                    dim_games_hub: 'Learning Hub & Games',
+                  }[activeDimension]}
+            </span>
+          </p>
+          <p className="flex items-center gap-2">
+            <span className="capitalize">{activePersona} view (sample)</span>
+            <span aria-hidden="true" className="w-8 h-8 rounded-full bg-clarity-100 text-clarity-700 font-bold flex items-center justify-center text-[11px]">
+              {activePersona.slice(0, 2).toUpperCase()}
+            </span>
+          </p>
+        </div>
+
+        {activeTab === 'overview' && (() => {
+          const overviewAssociate = associates.find((a) => a.id === focusedUserId) ?? associates[0];
+          return overviewAssociate ? (
+            <ClarityOverview
+              associate={overviewAssociate}
+              isAssociateLens={activePersona === 'associate'}
+              tickets={tickets}
+              learningModules={learningModules}
+              onNavigate={handleOverviewNavigate}
+            />
+          ) : null;
+        })()}
+
+        {/* OBVIOUSLY VISIBLE 5-DIMENSION VISUAL SWITCHER DECK (dimension views only) */}
+        {activeTab !== 'overview' && (
         <VisualDimensionSwitcher
           activeDimension={activeDimension}
           onSelectDimension={handleSelectDimension}
@@ -777,6 +901,7 @@ export function App() {
           csCertifiedPct={csCertifiedPct}
           activeUserPktPct={activeUserPktPct}
         />
+        )}
 
         {/* COMPACT 1-LINE RELATIONAL CONTEXT RIBBON */}
         <RelationalContextBar
@@ -797,7 +922,7 @@ export function App() {
         />
 
         {/* SCOPED SUB-NAVIGATION BAR FOR DIMENSION 2 (PROCESS TRAINING INTELLIGENCE) */}
-        {activeDimension === 'dim_process_intell' && (
+        {activeTab !== 'overview' && activeDimension === 'dim_process_intell' && (
           <div className="bg-white border border-slate-200 rounded-2xl p-2 shadow-xs flex flex-wrap items-center justify-between gap-2">
             <div className="flex flex-wrap items-center gap-1.5">
               {[
@@ -3098,6 +3223,7 @@ export function App() {
           </div>
         )}
       </main>
+      </div>
 
       {/* =====================================================================
           NATIVE <DIALOG> MODAL 1: INTERACTIVE COURSE & COMPLIANCE QUIZ ENGINE
