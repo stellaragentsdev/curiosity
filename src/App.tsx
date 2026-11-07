@@ -82,6 +82,17 @@ import {
   QUICK_AI_PROMPTS,
 } from './utils/rcmAiAssistant';
 import { ClarityOverview, OverviewDestination } from './components/ClarityOverview';
+import { AdminOverview, RoleDestination, TrainerOverview } from './components/RoleOverviews';
+import {
+  DIMENSION_LABELS,
+  PROFILE_DIMENSIONS,
+  PROFILE_LABELS,
+  PROFILE_PROCESS_TABS,
+  defaultTabForDimension,
+  isDimensionAllowed,
+  isTabAllowed,
+  profileForPersona,
+} from './utils/roleAccess';
 import { AdminGovernanceStudio } from './components/AdminGovernanceStudio';
 import { AssociateWorkspace } from './components/AssociateWorkspace';
 import { TrainerWorkbench, ReportsCenter } from './components/TrainerAndReportsHub';
@@ -178,29 +189,32 @@ export function App() {
     }, 4500);
   };
 
+  const profile = profileForPersona(activePersona);
+
   const handleSelectDimension = (dim: AppDimensionId) => {
-    setActiveDimension(dim);
-    if (dim === 'dim_org_learning') {
-      setActiveTab('org_learning');
-    } else if (dim === 'dim_process_intell') {
-      setActiveTab('dashboard');
-    } else if (dim === 'dim_nht_training') {
-      setActiveTab('nht_training');
-    } else if (dim === 'dim_cs_training') {
-      setActiveTab('cs_training');
-    } else if (dim === 'dim_games_hub') {
-      setActiveTab('games_hub');
+    if (!isDimensionAllowed(profile, dim)) {
+      triggerToast(`${DIMENSION_LABELS[dim]} is not part of the ${PROFILE_LABELS[profile]} sample profile view.`);
+      return;
     }
+    setActiveDimension(dim);
+    setActiveTab(defaultTabForDimension(profile, dim) as ActiveTab);
   };
 
   const openOverview = () => setActiveTab('overview');
-  const handleOverviewNavigate = (destination: OverviewDestination) => {
-    setActiveDimension('dim_process_intell');
+  const handleOverviewNavigate = (destination: OverviewDestination | RoleDestination) => {
+    if (!isTabAllowed(profile, destination)) return;
+    setActiveDimension(destination === 'nht_training' ? 'dim_nht_training' : 'dim_process_intell');
     setActiveTab(destination);
   };
 
   const handleSelectPersona = (persona: EnterprisePersona) => {
     setActivePersona(persona);
+    // Reset selections the new sample profile does not show.
+    const nextProfile = profileForPersona(persona);
+    if (!isTabAllowed(nextProfile, activeTab) || !isDimensionAllowed(nextProfile, activeDimension)) {
+      setActiveTab('overview');
+      if (!isDimensionAllowed(nextProfile, activeDimension)) setActiveDimension('dim_process_intell');
+    }
     if (persona === 'admin' || persona === 'operations') {
       setRole('admin');
     } else if (persona === 'trainer') {
@@ -217,6 +231,10 @@ export function App() {
     projId?: string,
     usrId?: string
   ) => {
+    if (!isTabAllowed(profile, 'admin_studio')) {
+      triggerToast(`Admin Studio is not part of the ${PROFILE_LABELS[profile]} sample profile view.`);
+      return;
+    }
     setAdminSubTab(sub);
     if (projId) setFocusedProjectId(projId);
     if (usrId) setFocusedUserId(usrId);
@@ -266,7 +284,7 @@ export function App() {
       id: 'AI-WELCOME',
       sender: 'assistant',
       timestamp: '09:15 IST',
-      text: 'Hello! I am **Curiosity AI**, your Medical Billing RCM Learning & Performance Intelligence Co-Pilot. Ask me about **CARC/RARC denial codes**, **Specialty Modifiers (-25, -59/XS, -PT/-33)**, **Payer Playbooks**, **BQT/PIP SLA rules**, or **Annual HIPAA & POSH Compliance**.',
+      text: 'Hello! I am **Curiosity AI**, the Curiosity — L&D Intelligence System co-pilot for medical billing RCM teams. Ask me about **CARC/RARC denial codes**, **Specialty Modifiers (-25, -59/XS, -PT/-33)**, **Payer Playbooks**, **BQT/PIP SLA rules**, or **Annual HIPAA & POSH Compliance**.',
       citations: ['SOP-OR-12 v3.4', 'SOP-CV-08 v2.1', 'COMP-HIPAA-2026'],
     },
   ]);
@@ -800,7 +818,7 @@ export function App() {
               ['dim_nht_training', 'NHT Training', UserPlus],
               ['dim_cs_training', 'CS Trainings', Building2],
               ['dim_games_hub', 'Learning Hub & Games', Gamepad2],
-            ] as [AppDimensionId, string, typeof Target][]).map(([id, label, Icon]) => {
+            ] as [AppDimensionId, string, typeof Target][]).filter(([id]) => PROFILE_DIMENSIONS[profile].includes(id)).map(([id, label, Icon]) => {
               const isActive = activeTab !== 'overview' && activeDimension === id;
               return (
                 <li key={id}>
@@ -835,7 +853,7 @@ export function App() {
               ['dim_nht_training', 'NHT Training'],
               ['dim_cs_training', 'CS Trainings'],
               ['dim_games_hub', 'Learning Hub & Games'],
-            ] as [AppDimensionId | 'overview', string][]).map(([id, label]) => {
+            ] as [AppDimensionId | 'overview', string][]).filter(([id]) => id === 'overview' || PROFILE_DIMENSIONS[profile].includes(id)).map(([id, label]) => {
               const isActive = id === 'overview' ? activeTab === 'overview' : activeTab !== 'overview' && activeDimension === id;
               return (
                 <li key={id}>
@@ -854,7 +872,7 @@ export function App() {
         </nav>
 
         {/* Clarity topline: breadcrumb + active role lens */}
-        <div className="flex items-center justify-between gap-3 text-xs text-clarity-muted">
+        <div className="flex flex-wrap items-center justify-between gap-3 text-xs text-clarity-muted">
           <p>
             Workspace /{' '}
             <span className="text-clarity-ink font-medium">
@@ -869,8 +887,28 @@ export function App() {
                   }[activeDimension]}
             </span>
           </p>
+          <div role="radiogroup" aria-label="Sample profile (demo view switch, not a login)" className="flex flex-wrap items-center gap-1.5">
+            <span className="text-[11px] font-semibold text-clarity-muted mr-1">Sample profile:</span>
+            {([
+              ['associate', 'Associate'],
+              ['trainer', 'Trainer / QA'],
+              ['admin', 'L&D Admin'],
+              ['operations', 'Operations'],
+            ] as [EnterprisePersona, string][]).map(([p, label]) => (
+              <button
+                key={p}
+                type="button"
+                role="radio"
+                aria-checked={activePersona === p}
+                onClick={() => handleSelectPersona(p)}
+                className={`clarity-nav-item px-2.5 py-1.5 rounded-lg text-[11px] border border-slate-200 bg-white ${activePersona === p ? 'is-active font-bold' : 'font-medium'}`}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
           <p className="flex items-center gap-2">
-            <span className="capitalize">{activePersona} view (sample)</span>
+            <span className="capitalize">{PROFILE_LABELS[profile]} view (sample)</span>
             <span aria-hidden="true" className="w-8 h-8 rounded-full bg-clarity-100 text-clarity-700 font-bold flex items-center justify-center text-[11px]">
               {activePersona.slice(0, 2).toUpperCase()}
             </span>
@@ -879,6 +917,19 @@ export function App() {
 
         {activeTab === 'overview' && (() => {
           const overviewAssociate = associates.find((a) => a.id === focusedUserId) ?? associates[0];
+          if (profile === 'trainer') {
+            return (
+              <TrainerOverview tickets={tickets} associates={associates} defects={defects}
+                calibrations={calibrations} nhtBatches={nhtBatches} onNavigate={handleOverviewNavigate} />
+            );
+          }
+          if (profile === 'admin') {
+            return (
+              <AdminOverview projects={filteredProjects} learningModules={learningModules}
+                complianceCourses={complianceCourses} sops={sops} summary={orgSummary}
+                onNavigate={handleOverviewNavigate} />
+            );
+          }
           return overviewAssociate ? (
             <ClarityOverview
               associate={overviewAssociate}
@@ -983,7 +1034,7 @@ export function App() {
                   label: 'Curiosity AI & SOPs',
                   icon: Bot,
                 },
-              ].map((tab) => {
+              ].filter((tab) => PROFILE_PROCESS_TABS[profile].includes(tab.id)).map((tab) => {
                 const Icon = tab.icon;
                 const isActive = activeTab === tab.id;
                 return (

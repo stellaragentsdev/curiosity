@@ -1,4 +1,5 @@
 import React, { useState, useMemo } from 'react';
+import { BRAND_FULL_TITLE, BRAND_TAGLINE } from '../config/brand';
 import {
   Activity,
   Award,
@@ -317,6 +318,7 @@ export const INITIAL_NHT_BATCHES: NhtBatchRecord[] = [
 export const CuriosityBrandLogo: React.FC<{ onClick?: () => void }> = ({ onClick }) => (
   <div
     onClick={onClick}
+    title={BRAND_FULL_TITLE}
     className="flex items-center gap-3 cursor-pointer group select-none"
   >
     <div className="relative w-11 h-11 rounded-2xl bg-gradient-to-br from-indigo-600 via-teal-500 to-amber-500 p-0.5 shadow-md shadow-indigo-500/20 group-hover:scale-105 transition-transform">
@@ -351,12 +353,9 @@ export const CuriosityBrandLogo: React.FC<{ onClick?: () => void }> = ({ onClick
           Curiosity
         </span>
         <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-indigo-50 text-indigo-700 border border-indigo-200">
-          RCM Learning OS
+          {BRAND_TAGLINE}
         </span>
       </div>
-      <p className="text-[11px] font-medium text-slate-500">
-        Visual Learning, Process Intelligence & Quality Certification Studio
-      </p>
     </div>
   </div>
 );
