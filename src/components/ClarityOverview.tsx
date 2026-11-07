@@ -1,5 +1,6 @@
 import React from 'react';
-import { ArrowUpRight, Bot } from 'lucide-react';
+import { ArrowUpRight } from 'lucide-react';
+import { NextBestStepCard } from './AiTouches';
 import {
   AssociateProfile,
   AutoTriggeredTrainingTicket,
@@ -175,6 +176,12 @@ export function ClarityOverview({
         </article>
 
         <div className="space-y-4">
+          <NextBestStepCard
+            associate={associate}
+            learningModules={learningModules}
+            onOpenModules={() => onNavigate('training_modules')}
+            onOpenAssistant={() => onNavigate('knowledge')}
+          />
           <article className="clarity-card">
             <h2 className="text-base font-bold text-clarity-ink">Quality trend</h2>
             <p className="mt-1 text-xs text-clarity-muted">Last {streak.length} weeks of sample QA scores</p>
@@ -196,19 +203,7 @@ export function ClarityOverview({
               Use progress to guide a conversation, not automate a performance decision.
             </p>
           </article>
-          <article className="rounded-xl border border-clarity-line bg-[#e9f1ef] p-5">
-            <span className="clarity-pill">Demo guidance only</span>
-            <p className="mt-3 text-xs leading-relaxed text-clarity-ink">
-              <b>Trainer Sam</b> can help you find a playbook. Verify guidance against an approved SOP and your trainer.
-            </p>
-            <button
-              type="button"
-              onClick={() => onNavigate('knowledge')}
-              className="mt-3 inline-flex items-center gap-1.5 text-xs font-bold text-clarity-700 hover:underline"
-            >
-              <Bot className="h-3.5 w-3.5" aria-hidden="true" /> Open Trainer Sam
-            </button>
-          </article>
+
         </div>
       </div>
 

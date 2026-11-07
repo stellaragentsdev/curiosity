@@ -82,6 +82,18 @@ import {
   QUICK_AI_PROMPTS,
 } from './utils/rcmAiAssistant';
 import { ClarityOverview, OverviewDestination } from './components/ClarityOverview';
+import { AdminOverview, RoleDestination, TrainerOverview } from './components/RoleOverviews';
+import {
+  DIMENSION_LABELS,
+  PROFILE_DIMENSIONS,
+  PROFILE_LABELS,
+  PROFILE_PROCESS_TABS,
+  defaultTabForDimension,
+  isDimensionAllowed,
+  isTabAllowed,
+  profileForPersona,
+  resolveView,
+} from './utils/roleAccess';
 import { AdminGovernanceStudio } from './components/AdminGovernanceStudio';
 import { AssociateWorkspace } from './components/AssociateWorkspace';
 import { TrainerWorkbench, ReportsCenter } from './components/TrainerAndReportsHub';
@@ -136,10 +148,16 @@ type ActiveTab =
 
 export function App() {
   // Global 5-Dimension & Role State
-  const [activeDimension, setActiveDimension] = useState<AppDimensionId>('dim_process_intell');
+  const [requestedDimension, setActiveDimension] = useState<AppDimensionId>('dim_process_intell');
   const [activePersona, setActivePersona] = useState<EnterprisePersona>('admin');
   const [role, setRole] = useState<UserRole>('admin');
-  const [activeTab, setActiveTab] = useState<ActiveTab>('overview');
+  const [requestedTab, setActiveTab] = useState<ActiveTab>('overview');
+  const [motionPaused, setMotionPaused] = useState(false);
+  // Derived synchronously during render so a profile switch can never show a
+  // stale, disallowed tab or workspace (even for a single frame).
+  const profile = profileForPersona(activePersona);
+  const { tab: resolvedTab, dimension: activeDimension } = resolveView(profile, requestedTab, requestedDimension);
+  const activeTab = resolvedTab as ActiveTab;
   const [adminSubTab, setAdminSubTab] = useState<'projects' | 'users' | 'courses' | 'groups'>('projects');
   const [focusedProjectId, setFocusedProjectId] = useState<string>('PRJ-CARD-01');
   const [focusedGroupId, setFocusedGroupId] = useState<string>('GRP-ORTHO-AR');
@@ -178,29 +196,32 @@ export function App() {
     }, 4500);
   };
 
+  const canOpenAdminStudio = isTabAllowed(profile, 'admin_studio');
+
   const handleSelectDimension = (dim: AppDimensionId) => {
-    setActiveDimension(dim);
-    if (dim === 'dim_org_learning') {
-      setActiveTab('org_learning');
-    } else if (dim === 'dim_process_intell') {
-      setActiveTab('dashboard');
-    } else if (dim === 'dim_nht_training') {
-      setActiveTab('nht_training');
-    } else if (dim === 'dim_cs_training') {
-      setActiveTab('cs_training');
-    } else if (dim === 'dim_games_hub') {
-      setActiveTab('games_hub');
+    if (!isDimensionAllowed(profile, dim)) {
+      triggerToast(`${DIMENSION_LABELS[dim]} is not part of the ${PROFILE_LABELS[profile]} sample profile view.`);
+      return;
     }
+    setActiveDimension(dim);
+    setActiveTab(defaultTabForDimension(profile, dim) as ActiveTab);
   };
 
   const openOverview = () => setActiveTab('overview');
-  const handleOverviewNavigate = (destination: OverviewDestination) => {
-    setActiveDimension('dim_process_intell');
+  const handleOverviewNavigate = (destination: OverviewDestination | RoleDestination) => {
+    if (!isTabAllowed(profile, destination)) return;
+    setActiveDimension(destination === 'nht_training' ? 'dim_nht_training' : 'dim_process_intell');
     setActiveTab(destination);
   };
 
   const handleSelectPersona = (persona: EnterprisePersona) => {
     setActivePersona(persona);
+    // Reset selections the new sample profile does not show.
+    const nextProfile = profileForPersona(persona);
+    if (!isTabAllowed(nextProfile, activeTab) || !isDimensionAllowed(nextProfile, activeDimension)) {
+      setActiveTab('overview');
+      if (!isDimensionAllowed(nextProfile, activeDimension)) setActiveDimension('dim_process_intell');
+    }
     if (persona === 'admin' || persona === 'operations') {
       setRole('admin');
     } else if (persona === 'trainer') {
@@ -217,6 +238,10 @@ export function App() {
     projId?: string,
     usrId?: string
   ) => {
+    if (!isTabAllowed(profile, 'admin_studio')) {
+      triggerToast(`Admin Studio is not part of the ${PROFILE_LABELS[profile]} sample profile view.`);
+      return;
+    }
     setAdminSubTab(sub);
     if (projId) setFocusedProjectId(projId);
     if (usrId) setFocusedUserId(usrId);
@@ -266,7 +291,7 @@ export function App() {
       id: 'AI-WELCOME',
       sender: 'assistant',
       timestamp: '09:15 IST',
-      text: 'Hello! I am **Curiosity AI**, your Medical Billing RCM Learning & Performance Intelligence Co-Pilot. Ask me about **CARC/RARC denial codes**, **Specialty Modifiers (-25, -59/XS, -PT/-33)**, **Payer Playbooks**, **BQT/PIP SLA rules**, or **Annual HIPAA & POSH Compliance**.',
+      text: 'Hello! I am **Curiosity AI**, the Curiosity — L&D Intelligence System co-pilot for medical billing RCM teams. Ask me about **CARC/RARC denial codes**, **Specialty Modifiers (-25, -59/XS, -PT/-33)**, **Payer Playbooks**, **BQT/PIP SLA rules**, or **Annual HIPAA & POSH Compliance**.',
       citations: ['SOP-OR-12 v3.4', 'SOP-CV-08 v2.1', 'COMP-HIPAA-2026'],
     },
   ]);
@@ -751,12 +776,27 @@ export function App() {
               </select>
             </div>
 
+            {isTabAllowed(profile, 'admin_studio') && (
             <button
               onClick={() => openAdminStudio('projects')}
               className="px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 border border-slate-200 text-slate-800 text-xs font-bold flex items-center gap-1.5 transition-all"
             >
               <FolderKanban className="w-3.5 h-3.5 text-indigo-600" />
               <span>Admin Studio</span>
+            </button>
+            )}
+
+            <button
+              type="button"
+              aria-pressed={motionPaused}
+              onClick={() => {
+                const next = !motionPaused;
+                document.documentElement.classList.toggle('motion-paused', next);
+                setMotionPaused(next);
+              }}
+              className="px-3 py-1.5 rounded-xl bg-white hover:bg-slate-100 border border-slate-200 text-slate-800 text-xs font-bold"
+            >
+              {motionPaused ? 'Resume motion' : 'Pause motion'}
             </button>
 
             <button
@@ -800,7 +840,7 @@ export function App() {
               ['dim_nht_training', 'NHT Training', UserPlus],
               ['dim_cs_training', 'CS Trainings', Building2],
               ['dim_games_hub', 'Learning Hub & Games', Gamepad2],
-            ] as [AppDimensionId, string, typeof Target][]).map(([id, label, Icon]) => {
+            ] as [AppDimensionId, string, typeof Target][]).filter(([id]) => PROFILE_DIMENSIONS[profile].includes(id)).map(([id, label, Icon]) => {
               const isActive = activeTab !== 'overview' && activeDimension === id;
               return (
                 <li key={id}>
@@ -835,7 +875,7 @@ export function App() {
               ['dim_nht_training', 'NHT Training'],
               ['dim_cs_training', 'CS Trainings'],
               ['dim_games_hub', 'Learning Hub & Games'],
-            ] as [AppDimensionId | 'overview', string][]).map(([id, label]) => {
+            ] as [AppDimensionId | 'overview', string][]).filter(([id]) => id === 'overview' || PROFILE_DIMENSIONS[profile].includes(id)).map(([id, label]) => {
               const isActive = id === 'overview' ? activeTab === 'overview' : activeTab !== 'overview' && activeDimension === id;
               return (
                 <li key={id}>
@@ -854,7 +894,7 @@ export function App() {
         </nav>
 
         {/* Clarity topline: breadcrumb + active role lens */}
-        <div className="flex items-center justify-between gap-3 text-xs text-clarity-muted">
+        <div className="flex flex-wrap items-center justify-between gap-3 text-xs text-clarity-muted">
           <p>
             Workspace /{' '}
             <span className="text-clarity-ink font-medium">
@@ -869,8 +909,28 @@ export function App() {
                   }[activeDimension]}
             </span>
           </p>
+          <div role="radiogroup" aria-label="Sample profile (demo view switch, not a login)" className="flex flex-wrap items-center gap-1.5">
+            <span className="text-[11px] font-semibold text-clarity-muted mr-1">Sample profile:</span>
+            {([
+              ['associate', 'Associate'],
+              ['trainer', 'Trainer / QA'],
+              ['admin', 'L&D Admin'],
+              ['operations', 'Operations'],
+            ] as [EnterprisePersona, string][]).map(([p, label]) => (
+              <button
+                key={p}
+                type="button"
+                role="radio"
+                aria-checked={activePersona === p}
+                onClick={() => handleSelectPersona(p)}
+                className={`clarity-nav-item px-2.5 py-1.5 rounded-lg text-[11px] border border-slate-200 bg-white ${activePersona === p ? 'is-active font-bold' : 'font-medium'}`}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
           <p className="flex items-center gap-2">
-            <span className="capitalize">{activePersona} view (sample)</span>
+            <span className="capitalize">{PROFILE_LABELS[profile]} view (sample)</span>
             <span aria-hidden="true" className="w-8 h-8 rounded-full bg-clarity-100 text-clarity-700 font-bold flex items-center justify-center text-[11px]">
               {activePersona.slice(0, 2).toUpperCase()}
             </span>
@@ -879,6 +939,19 @@ export function App() {
 
         {activeTab === 'overview' && (() => {
           const overviewAssociate = associates.find((a) => a.id === focusedUserId) ?? associates[0];
+          if (profile === 'trainer') {
+            return (
+              <TrainerOverview tickets={tickets} associates={associates} defects={defects}
+                calibrations={calibrations} nhtBatches={nhtBatches} learningModules={learningModules} onNavigate={handleOverviewNavigate} />
+            );
+          }
+          if (profile === 'admin') {
+            return (
+              <AdminOverview projects={filteredProjects} learningModules={learningModules}
+                complianceCourses={complianceCourses} sops={sops} summary={orgSummary}
+                onNavigate={handleOverviewNavigate} />
+            );
+          }
           return overviewAssociate ? (
             <ClarityOverview
               associate={overviewAssociate}
@@ -900,6 +973,7 @@ export function App() {
           nhtPassPct={nhtAvgGatePct}
           csCertifiedPct={csCertifiedPct}
           activeUserPktPct={activeUserPktPct}
+          visibleDimensions={PROFILE_DIMENSIONS[profile]}
         />
         )}
 
@@ -983,7 +1057,7 @@ export function App() {
                   label: 'Curiosity AI & SOPs',
                   icon: Bot,
                 },
-              ].map((tab) => {
+              ].filter((tab) => PROFILE_PROCESS_TABS[profile].includes(tab.id)).map((tab) => {
                 const Icon = tab.icon;
                 const isActive = activeTab === tab.id;
                 return (
@@ -1354,6 +1428,7 @@ export function App() {
                   </p>
                 </div>
                 <div className="flex flex-wrap items-center gap-2">
+                  {canOpenAdminStudio && (
                   <button
                     onClick={() => openAdminStudio('projects')}
                     className="px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-xs font-semibold text-white flex items-center gap-1.5"
@@ -1361,6 +1436,8 @@ export function App() {
                     <Plus className="w-3.5 h-3.5" />
                     <span>+ Add Project / View History</span>
                   </button>
+                  )}
+                  {canOpenAdminStudio && (
                   <button
                     onClick={() => openAdminStudio('users')}
                     className="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs font-medium text-slate-200 flex items-center gap-1.5"
@@ -1368,6 +1445,8 @@ export function App() {
                     <UserPlus className="w-3.5 h-3.5 text-sky-400" />
                     <span>+ Add User</span>
                   </button>
+                  )}
+                  {canOpenAdminStudio && (
                   <button
                     onClick={() => openAdminStudio('groups')}
                     className="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs font-medium text-slate-200 flex items-center gap-1.5"
@@ -1375,6 +1454,7 @@ export function App() {
                     <UsersRound className="w-3.5 h-3.5 text-purple-400" />
                     <span>User Groups ({userGroups.length})</span>
                   </button>
+                  )}
                 </div>
               </div>
 
@@ -1485,12 +1565,14 @@ export function App() {
                             </span>
                           </td>
                           <td className="py-3.5 px-4 text-right">
+                            {canOpenAdminStudio && (
                             <button
                               onClick={() => openAdminStudio('projects', proj.id)}
                               className="px-3 py-1.5 rounded-lg bg-indigo-600/20 hover:bg-indigo-600/30 border border-indigo-500/40 text-indigo-300 font-semibold text-[11px]"
                             >
                               Profile & History →
                             </button>
+                            )}
                           </td>
                         </tr>
                       );
@@ -1999,12 +2081,14 @@ export function App() {
                   <h2 className="text-sm font-bold text-white">
                     RCM Associate Monthly Scorecards & Consecutive-Week Quality SLA Escalation Roster
                   </h2>
+                  {canOpenAdminStudio && (
                   <button
                     onClick={() => openAdminStudio('users', undefined, selectedAssociate.id)}
                     className="text-xs text-indigo-300 hover:text-white font-semibold"
                   >
                     Open Full 360° User Profile →
                   </button>
+                  )}
                 </div>
 
                 <div className="overflow-x-auto">
@@ -2552,7 +2636,7 @@ export function App() {
                             onChange={(e) =>
                               setRebuttalDrafts((prev) => ({ ...prev, [def.id]: e.target.value }))
                             }
-                            className="flex-1 min-w-[240px] bg-slate-950 border border-slate-800 rounded-lg px-3 py-1.5 text-xs text-white"
+                            className="flex-1 min-w-0 sm:min-w-[240px] bg-slate-950 border border-slate-800 rounded-lg px-3 py-1.5 text-xs text-white"
                           />
                           <button
                             onClick={() => handleRaiseRebuttal(def.id)}
@@ -2572,7 +2656,7 @@ export function App() {
                             onChange={(e) =>
                               setQaNotesDraft((prev) => ({ ...prev, [def.id]: e.target.value }))
                             }
-                            className="flex-1 min-w-[220px] bg-slate-950 border border-slate-800 rounded-lg px-3 py-1.5 text-xs text-white"
+                            className="flex-1 min-w-0 sm:min-w-[220px] bg-slate-950 border border-slate-800 rounded-lg px-3 py-1.5 text-xs text-white"
                           />
                           <button
                             onClick={() => handleResolveRebuttal(def.id, 'Rebuttal Accepted')}
@@ -2704,6 +2788,7 @@ export function App() {
                 </p>
               </div>
               <div className="flex flex-wrap items-center gap-2">
+                {canOpenAdminStudio && (
                 <button
                   onClick={() => openAdminStudio('courses')}
                   className="px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-xs font-semibold text-white flex items-center gap-1.5"
@@ -2711,6 +2796,7 @@ export function App() {
                   <Plus className="w-4 h-4" />
                   <span>+ Create New Course</span>
                 </button>
+                )}
                 <button
                   onClick={() =>
                     triggerToast(
