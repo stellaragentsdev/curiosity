@@ -215,3 +215,42 @@ dialog::backdrop {
   color: #182b37 !important;
   border-color: #c9d6db !important;
 }
+
+.clarity-card {
+  background: #ffffff;
+  border: 1px solid #dfe7eb;
+  border-radius: 11px;
+  padding: 20px;
+}
+
+.clarity-stat-label {
+  font-size: 12px;
+  font-weight: 500;
+  color: #536971;
+}
+
+.clarity-number {
+  margin-top: 12px;
+  font-size: 30px;
+  line-height: 1.1;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: #182b37;
+}
+
+.clarity-caption {
+  margin-top: 10px;
+  font-size: 11px;
+  color: #536971;
+}
+
+.clarity-pill {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 999px;
+  background: #e3f3ee;
+  color: #075c50;
+  padding: 4px 10px;
+  font-size: 10px;
+  font-weight: 700;
+}
