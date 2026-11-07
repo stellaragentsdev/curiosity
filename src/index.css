@@ -5,15 +5,50 @@
 @layer base {
   :root {
     color-scheme: light;
-    scrollbar-color: #cbd5e1 #f8fafc;
+    scrollbar-color: #c3d3d0 #f3f6f7;
     scrollbar-width: thin;
   }
 
   body {
     font-feature-settings: "cv02", "cv03", "cv04", "cv11";
-    background-color: #f8fafc;
-    color: #0f172a;
+    background-color: #f3f6f7;
+    color: #182b37;
   }
+
+  /* Clarity: visible, high-contrast keyboard focus for every control */
+  :where(button, a, input, select, textarea, summary, [tabindex]):focus-visible {
+    outline: 3px solid #f2963b !important;
+    outline-offset: 2px;
+  }
+}
+
+/* ============================================================================
+   CLARITY GREEN SHELL (approved design proposal 01 / Clarity)
+   ============================================================================ */
+.curiosity-light-surface.bg-slate-50 {
+  background-color: #f3f6f7;
+}
+
+.clarity-nav-item {
+  color: #536971;
+}
+
+.clarity-nav-item:hover {
+  background-color: #eef8f5;
+  color: #075c50;
+}
+
+.clarity-nav-item.is-active {
+  background-color: #e3f3ee;
+  color: #075c50;
+}
+
+.curiosity-light-surface .border-slate-200 {
+  border-color: #dfe7eb;
+}
+
+.curiosity-light-surface table thead th {
+  color: #536971;
 }
 
 .tabular-nums {
@@ -70,7 +105,7 @@ dialog::backdrop {
 .curiosity-light-surface .from-purple-950\/90,
 .curiosity-light-surface .from-cyan-950\/60,
 .curiosity-light-surface .from-emerald-950\/60 {
-  --tw-gradient-from: #eef2ff !important;
+  --tw-gradient-from: #eef8f5 !important;
   --tw-gradient-to: #f8fafc !important;
   --tw-gradient-stops: var(--tw-gradient-from), #ffffff, var(--tw-gradient-to) !important;
 }
@@ -131,11 +166,11 @@ dialog::backdrop {
 
 .curiosity-light-surface .text-indigo-300,
 .curiosity-light-surface .text-indigo-200 {
-  color: #4338ca !important;
+  color: #075c50 !important;
 }
 
 .curiosity-light-surface .text-indigo-400 {
-  color: #4f46e5 !important;
+  color: #096b61 !important;
 }
 
 .curiosity-light-surface .text-emerald-300,
@@ -177,6 +212,6 @@ dialog::backdrop {
 .curiosity-light-surface select,
 .curiosity-light-surface textarea {
   background-color: #ffffff !important;
-  color: #0f172a !important;
-  border-color: #cbd5e1 !important;
+  color: #182b37 !important;
+  border-color: #c9d6db !important;
 }

@@ -766,7 +766,44 @@ export function App() {
       </header>
 
       {/* Main Content Area */}
-      <main className="flex-1 max-w-[1440px] w-full mx-auto px-4 sm:px-6 py-5 space-y-5">
+      <div className="flex-1 w-full max-w-[1600px] mx-auto flex">
+      {/* Clarity sidebar: persistent workspace navigation on large screens.
+          Mobile/tablet keep the existing dimension switcher deck below. */}
+      <aside className="clarity-sidebar hidden lg:flex flex-col gap-6 w-60 shrink-0 bg-white border-r border-slate-200 px-4 py-6 sticky top-[65px] self-start h-[calc(100vh-65px)] overflow-y-auto">
+        <nav aria-label="Workspace dimensions">
+          <div className="text-[10px] font-bold tracking-[0.14em] uppercase text-slate-500 px-2 mb-2">Workspace</div>
+          <ul className="space-y-1">
+            {([
+              ['dim_org_learning', 'Organizational Learning', GraduationCap],
+              ['dim_process_intell', 'Process Training Intell', Target],
+              ['dim_nht_training', 'NHT Training', UserPlus],
+              ['dim_cs_training', 'CS Trainings', Building2],
+              ['dim_games_hub', 'Learning Hub & Games', Gamepad2],
+            ] as [AppDimensionId, string, typeof Target][]).map(([id, label, Icon]) => {
+              const isActive = activeDimension === id;
+              return (
+                <li key={id}>
+                  <button
+                    type="button"
+                    onClick={() => handleSelectDimension(id)}
+                    aria-current={isActive ? 'page' : undefined}
+                    className={`clarity-nav-item w-full flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-xs text-left transition-colors ${
+                      isActive ? 'is-active font-bold' : 'font-medium'
+                    }`}
+                  >
+                    <Icon className="w-4 h-4 shrink-0" aria-hidden="true" />
+                    <span>{label}</span>
+                  </button>
+                </li>
+              );
+            })}
+          </ul>
+        </nav>
+        <p className="mt-auto text-[11px] leading-relaxed text-slate-500 px-2">
+          Sample data only. Role views are a UI preview, not access control.
+        </p>
+      </aside>
+      <main className="flex-1 min-w-0 w-full px-4 sm:px-6 lg:px-8 py-5 lg:py-7 space-y-5">
         {/* OBVIOUSLY VISIBLE 5-DIMENSION VISUAL SWITCHER DECK */}
         <VisualDimensionSwitcher
           activeDimension={activeDimension}
@@ -3098,6 +3135,7 @@ export function App() {
           </div>
         )}
       </main>
+      </div>
 
       {/* =====================================================================
           NATIVE <DIALOG> MODAL 1: INTERACTIVE COURSE & COMPLIANCE QUIZ ENGINE
