@@ -1252,7 +1252,7 @@ export const AdminGovernanceStudio: React.FC<AdminGovernanceStudioProps> = ({
                 </div>
               </div>
               <div className="flex flex-wrap items-center justify-between gap-3 pt-2">
-                <div className="flex-1 min-w-[240px] text-xs">
+                <div className="flex-1 min-w-0 sm:min-w-[240px] text-xs">
                   <label className="block text-slate-300 mb-1">
                     Certifications (comma-separated, e.g. AAPC CPC, CRCR, HIPAA-2026)
                   </label>

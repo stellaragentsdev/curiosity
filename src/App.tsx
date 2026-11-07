@@ -2636,7 +2636,7 @@ export function App() {
                             onChange={(e) =>
                               setRebuttalDrafts((prev) => ({ ...prev, [def.id]: e.target.value }))
                             }
-                            className="flex-1 min-w-[240px] bg-slate-950 border border-slate-800 rounded-lg px-3 py-1.5 text-xs text-white"
+                            className="flex-1 min-w-0 sm:min-w-[240px] bg-slate-950 border border-slate-800 rounded-lg px-3 py-1.5 text-xs text-white"
                           />
                           <button
                             onClick={() => handleRaiseRebuttal(def.id)}
@@ -2656,7 +2656,7 @@ export function App() {
                             onChange={(e) =>
                               setQaNotesDraft((prev) => ({ ...prev, [def.id]: e.target.value }))
                             }
-                            className="flex-1 min-w-[220px] bg-slate-950 border border-slate-800 rounded-lg px-3 py-1.5 text-xs text-white"
+                            className="flex-1 min-w-0 sm:min-w-[220px] bg-slate-950 border border-slate-800 rounded-lg px-3 py-1.5 text-xs text-white"
                           />
                           <button
                             onClick={() => handleResolveRebuttal(def.id, 'Rebuttal Accepted')}

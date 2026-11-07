@@ -864,7 +864,7 @@ export const AssociateWorkspace: React.FC<AssociateWorkspaceProps> = ({
                           onChange={(e) =>
                             setRebuttalInput((prev) => ({ ...prev, [def.id]: e.target.value }))
                           }
-                          className="flex-1 min-w-[240px] bg-slate-900 border border-slate-700 rounded-lg px-3 py-1.5 text-white"
+                          className="flex-1 min-w-0 sm:min-w-[240px] bg-slate-900 border border-slate-700 rounded-lg px-3 py-1.5 text-white"
                         />
                         <button
                           onClick={() => handleSubmitAssociateRebuttal(def.id)}
@@ -1058,7 +1058,7 @@ export const AssociateWorkspace: React.FC<AssociateWorkspaceProps> = ({
                 ))}
               </div>
 
-              <div className="relative min-w-[240px] flex-1 max-w-sm">
+              <div className="relative min-w-0 sm:min-w-[240px] flex-1 max-w-sm">
                 <Search className="w-4 h-4 text-slate-400 absolute left-3 top-2" />
                 <input
                   type="text"

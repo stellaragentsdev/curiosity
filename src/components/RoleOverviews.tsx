@@ -97,12 +97,29 @@ export function TrainerOverview({ tickets, associates, defects, calibrations, nh
             <h2 className="text-base font-bold text-clarity-ink">Coaching queue</h2>
             <span className="clarity-pill">{openTickets.length} open</span>
           </div>
-          <table className="mt-3 w-full text-left text-xs">
+          <ul className="mt-3 divide-y divide-clarity-line sm:hidden" aria-label="Coaching queue">
+            {openTickets.slice(0, 6).map((t) => (
+              <li key={t.id} className="queue-card py-3">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <p className="text-sm font-bold text-clarity-ink">{t.associateName}</p>
+                    <p className="text-xs text-clarity-muted">{t.projectName}</p>
+                  </div>
+                  <LinkPill label="Review" onClick={() => onNavigate('trainer_hub')} />
+                </div>
+                <div className="mt-2 flex flex-wrap items-center gap-2 text-xs">
+                  <span className="clarity-pill">{t.triggerLevel.split(':')[1]?.trim() ?? t.triggerLevel}</span>
+                  <span className="tabular-nums text-clarity-muted">Quality {t.qualityActualPct}% / {t.qualityTargetPct}%</span>
+                </div>
+              </li>
+            ))}
+          </ul>
+          <table className="mt-3 hidden w-full min-w-[520px] text-left text-xs sm:table">
             <thead>
               <tr className="border-b border-clarity-line text-[10px] uppercase tracking-wider">
-                <th scope="col" className="py-2 pr-3">Associate / project</th>
-                <th scope="col" className="py-2 pr-3">Workflow</th>
-                <th scope="col" className="py-2 pr-3">Quality</th>
+                <th scope="col" className="whitespace-nowrap py-2 pr-3">Associate / project</th>
+                <th scope="col" className="whitespace-nowrap py-2 pr-3">Workflow</th>
+                <th scope="col" className="whitespace-nowrap py-2 pr-3">Quality</th>
                 <th scope="col" className="py-2"><span className="sr-only">Action</span></th>
               </tr>
             </thead>
@@ -201,12 +218,25 @@ export function AdminOverview({ projects, learningModules, complianceCourses, so
             <h2 className="text-base font-bold text-clarity-ink">Project health</h2>
             <LinkPill label="All dashboards" onClick={() => onNavigate('dashboard')} />
           </div>
-          <table className="mt-3 w-full text-left text-xs">
+          <ul className="mt-3 divide-y divide-clarity-line sm:hidden" aria-label="Project health">
+            {projects.slice(0, 6).map((p) => (
+              <li key={p.id} className="py-3">
+                <p className="text-sm font-bold text-clarity-ink">{p.projectName}</p>
+                <p className="text-xs text-clarity-muted">{p.specialty}</p>
+                <dl className="mt-2 grid grid-cols-3 gap-2 text-xs">
+                  <div><dt className="text-[10px] text-clarity-muted">Headcount</dt><dd className="tabular-nums font-semibold">{p.headcount}</dd></div>
+                  <div><dt className="text-[10px] text-clarity-muted">Health</dt><dd className="tabular-nums font-semibold">{p.healthScore}</dd></div>
+                  <div><dt className="text-[10px] text-clarity-muted">Quality</dt><dd className="tabular-nums font-semibold">{p.qualitySlaPct}% / {p.qualityTargetPct}%</dd></div>
+                </dl>
+              </li>
+            ))}
+          </ul>
+          <table className="mt-3 hidden w-full min-w-[520px] text-left text-xs sm:table">
             <thead>
               <tr className="border-b border-clarity-line text-[10px] uppercase tracking-wider">
-                <th scope="col" className="py-2 pr-3">Project</th>
-                <th scope="col" className="py-2 pr-3">Headcount</th>
-                <th scope="col" className="py-2 pr-3">Health</th>
+                <th scope="col" className="whitespace-nowrap py-2 pr-3">Project</th>
+                <th scope="col" className="whitespace-nowrap py-2 pr-3">Headcount</th>
+                <th scope="col" className="whitespace-nowrap py-2 pr-3">Health</th>
                 <th scope="col" className="py-2">Quality</th>
               </tr>
             </thead>

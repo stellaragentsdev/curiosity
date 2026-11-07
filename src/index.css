@@ -305,4 +305,7 @@ select { max-width: 100%; }
   .clarity-card { padding: 16px; }
   .clarity-number { font-size: 26px; }
 }
-.clarity-card, .ai-step, .tilt-card { min-width: 0; overflow-wrap: anywhere; }
+.clarity-card, .ai-step, .tilt-card { min-width: 0; overflow-wrap: break-word; }
+/* Chips and table headers never split mid-word. */
+.clarity-pill { white-space: nowrap; overflow-wrap: normal; }
+.clarity-card th { white-space: nowrap; }
